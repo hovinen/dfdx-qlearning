@@ -214,7 +214,7 @@ where
         if !candidates.is_empty() {
             let action = self
                 .1
-                .choose_with_epsilon_greedy(&state, self.0.clone(), &candidates);
+                .choose_with_epsilon_greedy(state, self.0.clone(), &candidates);
             state.apply_action(action.clone(), self.0.clone());
             Some(Step {
                 old_state,
@@ -231,7 +231,7 @@ where
         if !candidates.is_empty() {
             let action = self
                 .1
-                .choose_from_model_only(&state, self.0.clone(), &candidates);
+                .choose_from_model_only(state, self.0.clone(), &candidates);
             state.apply_action(action, self.0.clone());
         }
     }
@@ -300,7 +300,7 @@ where
         if !candidates.is_empty() {
             let action = self
                 .1
-                .choose_from_model_only(&state, self.0.clone(), &candidates);
+                .choose_from_model_only(state, self.0.clone(), &candidates);
             state.apply_action(action, self.0.clone());
         }
     }

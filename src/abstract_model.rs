@@ -88,7 +88,7 @@ where
     }
 
     // TODO: Support multiple actions by, e.g., taking all actions above a threshold.
-    pub fn choose_with_epsilon_greedy<'a>(
+    pub fn choose_with_epsilon_greedy(
         &self,
         state: &State,
         context: Context,
@@ -102,7 +102,7 @@ where
         }
     }
 
-    pub fn choose_from_model_only<'a>(
+    pub fn choose_from_model_only(
         &self,
         state: &State,
         context: Context,
@@ -163,7 +163,7 @@ where
                 let q_tensor = q_estimates
                     .entry(example.new_state.clone())
                     .or_insert_with(|| self.evaluate(&example.new_state, context.clone()));
-                let q = *q_tensor.into_iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+                let q = *q_tensor.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
                 y_state[example.action.encode()] = example.reward.0 + self.future_discount * q;
             }
             y.extend(y_state);
