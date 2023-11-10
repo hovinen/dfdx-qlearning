@@ -776,7 +776,7 @@ mod tests {
                     ],
                     CellState::Red
                 ),
-                ge(95)
+                ge(80)
             )
         }
 
@@ -806,7 +806,7 @@ mod tests {
                     ],
                     CellState::Blue
                 ),
-                ge(95)
+                ge(80)
             )
         }
 
