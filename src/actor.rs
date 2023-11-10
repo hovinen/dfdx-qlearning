@@ -1,4 +1,7 @@
-use crate::abstract_model::{AbstractModel, EncodableAction, EncodableState, Reward};
+use crate::{
+    abstract_model::{AbstractModel, EncodableAction, EncodableState, Reward},
+    game_logger::GameLogger,
+};
 use dfdx::{
     prelude::{BuildOnDevice, Module, ModuleMut, TensorCollection},
     shapes::{Const, Rank1},
@@ -6,47 +9,7 @@ use dfdx::{
 };
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
-use std::{
-    cell::Cell,
-    collections::HashMap,
-    fmt::{Debug, Display},
-    hash::Hash,
-    marker::PhantomData,
-};
-
-pub trait GameLogger<Player, State> {
-    fn log_state(&self, player: &Player, state: &State);
-
-    fn log_wins(&self, player: &Player, count: usize, game_count: usize);
-
-    fn log_draws(&self, count: usize, game_count: usize);
-}
-
-struct TrivialGameLogger;
-
-impl<Player, State> GameLogger<Player, State> for TrivialGameLogger {
-    fn log_state(&self, _player: &Player, _state: &State) {}
-
-    fn log_wins(&self, _player: &Player, _count: usize, _game_count: usize) {}
-
-    fn log_draws(&self, _count: usize, _game_count: usize) {}
-}
-
-struct DisplayGameLogger;
-
-impl<Player: Display, State: Display> GameLogger<Player, State> for DisplayGameLogger {
-    fn log_state(&self, player: &Player, state: &State) {
-        println!("After {player} move:\n{state}\n");
-    }
-
-    fn log_wins(&self, player: &Player, count: usize, game_count: usize) {
-        print!("{player} wins = {count:4} / {game_count:4}, ",);
-    }
-
-    fn log_draws(&self, count: usize, game_count: usize) {
-        println!("draws = {count:4} / {game_count:4}");
-    }
-}
+use std::{cell::Cell, collections::HashMap, fmt::Debug, hash::Hash, marker::PhantomData};
 
 pub struct Engine<Player, Action, State, Logger> {
     logger: Logger,
@@ -350,9 +313,9 @@ mod tests {
     mod tictactoe {
         use crate::abstract_model::{AbstractModel, EncodableAction, EncodableState, Reward};
         use crate::actor::{
-            Actor, ActorState, DisplayGameLogger, Engine, EnumerablePlayer, NaiveActor,
-            TrainableActor,
+            Actor, ActorState, Engine, EnumerablePlayer, NaiveActor, TrainableActor,
         };
+        use crate::game_logger::DisplayGameLogger;
         use dfdx::{
             nn::builders::Linear,
             prelude::ReLU,
@@ -732,9 +695,9 @@ mod tests {
     mod connectfour {
         use crate::abstract_model::{AbstractModel, EncodableAction, EncodableState, Reward};
         use crate::actor::{
-            Actor, ActorState, DisplayGameLogger, Engine, EnumerablePlayer, NaiveActor,
-            TrainableActor,
+            Actor, ActorState, Engine, EnumerablePlayer, NaiveActor, TrainableActor,
         };
+        use crate::game_logger::DisplayGameLogger;
         use dfdx::{
             nn::builders::Linear,
             prelude::ReLU,
