@@ -16,12 +16,16 @@ use std::{
     marker::PhantomData,
 };
 
+/// Factor by which epsilon, the probability of choosing a random action rather than using the
+/// model, decays in each training iteration.
 const EPSILON_DECAY: f32 = 0.9995;
 
+/// The minimum value of epsilon, the probability of choosing a random action rather than using the
+/// model. It will decay until it reaches this point.
 const MIN_EPSILON: f32 = 0.01;
 
 /// Contribution of training model when updating the ground model.
-const TAU: f32 = 0.05;
+const TAU: f32 = 0.02;
 
 /// Time steps after which we update the ground model with the training model.
 const C: usize = 200;

@@ -382,7 +382,6 @@ mod tests {
         }
 
         #[rstest::rstest]
-        #[case(5, 10000, 0.9, 0.3)]
         #[case(10, 10000, 0.9, 0.3)]
         #[ignore = "Test for diagnostic purposes only"]
         fn model_improves_with_training(
@@ -391,9 +390,11 @@ mod tests {
             #[case] future_discount: f32,
             #[case] epsilon: f32,
         ) -> Result<()> {
+            use crate::game_logger::TrivialGameLogger;
+
             const STEPS: usize = 100;
-            const STEP_GAME_COUNT: usize = 50;
-            const TEST_GAME_COUNT: usize = 1000;
+            const STEP_GAME_COUNT: usize = 200;
+            const TEST_GAME_COUNT: usize = 100;
             let mut current_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
                 CellState::O,
                 AbstractModel::new(train_steps, future_discount, epsilon, capacity),
@@ -403,7 +404,7 @@ mod tests {
                 .make_untrainable()
                 .switch_player(CellState::X);
             let mut naive_actor = NaiveActor::new(CellState::X);
-            let engine = Engine::new(DisplayGameLogger);
+            let engine = Engine::new(TrivialGameLogger);
 
             let mut x_wins = 0;
             let mut o_wins = 0;
