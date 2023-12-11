@@ -87,6 +87,29 @@ where
         }
     }
 
+    pub fn load<'a>(
+        path: &'a str,
+        train_steps: usize,
+        future_discount: f32,
+        epsilon: f32,
+        capacity: usize,
+    ) -> std::io::Result<Self>
+    where
+        <Model as BuildOnDevice<Cpu, f32>>::Built: dfdx::nn::LoadFromNpz<f32, Cpu>,
+    {
+        let device = AutoDevice::seed_from_u64(thread_rng().gen());
+        let network = NeuralNetwork::load(path, &device, train_steps)?;
+        Ok(Self {
+            device,
+            network,
+            training_examples: TrainingExamples::new(capacity),
+            future_discount,
+            epsilon,
+            tick: 0,
+            phantom: Default::default(),
+        })
+    }
+
     // TODO: Support multiple actions by, e.g., taking all actions above a threshold.
     pub fn choose_with_epsilon_greedy(
         &self,
@@ -131,6 +154,13 @@ where
 
     pub fn record(&mut self, state: State, action: Action, reward: Reward, new_state: State) {
         self.training_examples.add(state, action, reward, new_state)
+    }
+
+    pub fn save(&self, path: &str) -> std::io::Result<()>
+    where
+        <Model as BuildOnDevice<Cpu, f32>>::Built: dfdx::nn::SaveToNpz<f32, Cpu>,
+    {
+        Ok(self.network.model.save(path)?)
     }
 }
 
@@ -226,6 +256,32 @@ where
             optimiser,
             train_steps,
         }
+    }
+
+    pub fn load<'a>(
+        path: &'a str,
+        device: &AutoDevice,
+        train_steps: usize,
+    ) -> std::io::Result<Self> {
+        let mut model: <Model as BuildOnDevice<Cpu, f32>>::Built =
+            device.build_module::<Model, f32>();
+        model
+            .load(path)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let model_training = model.clone();
+        let optimiser = Adam::new(
+            &model,
+            AdamConfig {
+                weight_decay: Some(WeightDecay::L2(1e-1)),
+                ..Default::default()
+            },
+        );
+        Ok(Self {
+            model,
+            model_training,
+            optimiser,
+            train_steps,
+        })
     }
 
     fn evaluate(

@@ -327,24 +327,13 @@ mod tests {
             hash::Hash,
         };
 
-        const GAME_COUNT: usize = 5000;
-
         #[test]
         fn trained_x_model_wins_over_untrained_o_model() -> Result<()> {
-            let mut x_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
+            let x_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
                 CellState::X,
-                AbstractModel::new(10, 0.9, 0.3, 10000),
+                AbstractModel::load("models/tictactoe.npz", 10, 0.9, 0.3, 10000)?,
             );
-            let mut naive_actor = NaiveActor::new(CellState::O);
-            let engine = Engine::new(DisplayGameLogger);
-
-            engine.train_players(
-                &mut [
-                    (&CellState::X, &mut x_actor),
-                    (&CellState::O, &mut naive_actor),
-                ],
-                GAME_COUNT,
-            );
+            let naive_actor = NaiveActor::new(CellState::O);
 
             verify_that!(
                 win_count_after_n_games(
@@ -358,20 +347,11 @@ mod tests {
 
         #[test]
         fn trained_o_model_wins_over_untrained_x_model() -> Result<()> {
-            let mut o_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
+            let o_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
                 CellState::O,
-                AbstractModel::new(10, 0.9, 0.3, 10000),
+                AbstractModel::load("models/tictactoe.npz", 10, 0.9, 0.3, 10000)?,
             );
-            let mut naive_actor = NaiveActor::new(CellState::X);
-            let engine = Engine::new(DisplayGameLogger);
-
-            engine.train_players(
-                &mut [
-                    (&CellState::X, &mut naive_actor),
-                    (&CellState::O, &mut o_actor),
-                ],
-                GAME_COUNT,
-            );
+            let naive_actor = NaiveActor::new(CellState::X);
 
             verify_that!(
                 win_count_after_n_games(
@@ -496,6 +476,8 @@ mod tests {
                 (&CellState::X, &previous_actor),
                 (&CellState::O, &current_actor),
             ]);
+
+            current_actor.1.save("models/tictactoe.npz")?;
 
             verify_that!(o_wins as f32 / TEST_GAME_COUNT as f32, ge(0.80))
         }
@@ -709,24 +691,13 @@ mod tests {
             hash::Hash,
         };
 
-        const GAME_COUNT: usize = 5000;
-
         #[test]
         fn trained_red_model_wins_over_untrained_blue_model() -> Result<()> {
-            let mut red_actor = TrainableActor::<ConnectFourState, _, _, ConnectFourNetwork, 42, 7>(
+            let red_actor = TrainableActor::<ConnectFourState, _, _, ConnectFourNetwork, 42, 7>(
                 CellState::Red,
-                AbstractModel::new(10, 0.9, 0.3, 10000),
+                AbstractModel::load("models/connectfour.npz", 10, 0.9, 0.3, 10000)?,
             );
-            let mut naive_actor = NaiveActor::new(CellState::Blue);
-            let engine = Engine::new(DisplayGameLogger);
-
-            engine.train_players(
-                &mut [
-                    (&CellState::Red, &mut red_actor),
-                    (&CellState::Blue, &mut naive_actor),
-                ],
-                GAME_COUNT,
-            );
+            let naive_actor = NaiveActor::new(CellState::Blue);
 
             verify_that!(
                 win_count_after_n_games(
@@ -743,20 +714,11 @@ mod tests {
 
         #[test]
         fn trained_blue_model_wins_over_untrained_red_model() -> Result<()> {
-            let mut blue_actor = TrainableActor::<ConnectFourState, _, _, ConnectFourNetwork, 42, 7>(
+            let blue_actor = TrainableActor::<ConnectFourState, _, _, ConnectFourNetwork, 42, 7>(
                 CellState::Blue,
-                AbstractModel::new(10, 0.9, 0.3, 10000),
+                AbstractModel::load("models/connectfour.npz", 10, 0.9, 0.3, 10000)?,
             );
-            let mut naive_actor = NaiveActor::new(CellState::Red);
-            let engine = Engine::new(DisplayGameLogger);
-
-            engine.train_players(
-                &mut [
-                    (&CellState::Red, &mut naive_actor),
-                    (&CellState::Blue, &mut blue_actor),
-                ],
-                GAME_COUNT,
-            );
+            let naive_actor = NaiveActor::new(CellState::Red);
 
             verify_that!(
                 win_count_after_n_games(
@@ -885,6 +847,8 @@ mod tests {
                 (&CellState::Red, &previous_actor),
                 (&CellState::Blue, &current_actor),
             ]);
+
+            current_actor.1.save("models/connectfour.npz")?;
 
             verify_that!(blue_wins as f32 / TEST_GAME_COUNT as f32, ge(0.80))
         }
