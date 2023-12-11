@@ -25,7 +25,6 @@ impl<
         Logger: GameLogger<Player, State>,
     > Engine<Player, Action, State, Logger>
 {
-    #[allow(unused)]
     pub fn new(logger: Logger) -> Self {
         Self {
             logger,
@@ -35,7 +34,6 @@ impl<
         }
     }
 
-    #[allow(unused)]
     pub fn play_once(&self, actors: &[(&Player, &dyn Actor<State, Action>)]) -> Option<Player> {
         let mut state = State::default();
         while !state.is_game_over() {
