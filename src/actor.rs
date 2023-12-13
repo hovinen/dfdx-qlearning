@@ -382,7 +382,7 @@ mod tests {
         }
 
         #[rstest::rstest]
-        #[case(10, 10000, 0.9, 0.3)]
+        #[case(10, 10000, 1.0, 0.3)]
         #[ignore = "Test for diagnostic purposes only"]
         fn model_improves_with_training(
             #[case] train_steps: usize,
@@ -421,7 +421,7 @@ mod tests {
             }
             println!("[train_steps={train_steps}, capacity={capacity}, future_discount={future_discount}, epsilon={epsilon}] After    0 games:           X wins = {x_wins:4} / {TEST_GAME_COUNT:4}, O wins = {o_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}");
 
-            for step in 0..STEPS {
+            'training_loop: for step in 0..STEPS {
                 let existing_actor = current_actor
                     .clone()
                     .make_untrainable()
@@ -464,6 +464,11 @@ mod tests {
                     }
 
                     println!("[train_steps={train_steps}, capacity={capacity}, future_discount={future_discount}, epsilon={epsilon}] After {:4} games:           X wins = {x_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}, O wins = {o_wins:4} / {TEST_GAME_COUNT:4}", (step + 1) * STEP_GAME_COUNT);
+
+                    if o_wins as f32 / TEST_GAME_COUNT as f32 > 0.9 {
+                        println!("Model seems good enough, ending training");
+                        break 'training_loop;
+                    }
                 }
             }
 
@@ -753,8 +758,7 @@ mod tests {
         }
 
         #[rstest::rstest]
-        #[case(5, 10000, 0.9, 0.3)]
-        #[case(10, 10000, 0.9, 0.3)]
+        #[case(10, 10000, 1.0, 0.3)]
         #[ignore = "Test for diagnostic purposes only"]
         fn model_improves_with_training(
             #[case] train_steps: usize,
@@ -763,7 +767,7 @@ mod tests {
             #[case] epsilon: f32,
         ) -> Result<()> {
             const STEPS: usize = 100;
-            const STEP_GAME_COUNT: usize = 50;
+            const STEP_GAME_COUNT: usize = 200;
             const TEST_GAME_COUNT: usize = 1000;
             let mut current_actor =
                 TrainableActor::<ConnectFourState, _, _, ConnectFourNetwork, 42, 7>(
@@ -792,7 +796,7 @@ mod tests {
             }
             println!("[train_steps={train_steps}, capacity={capacity}, future_discount={future_discount}, epsilon={epsilon}] After    0 games:           Red wins = {red_wins:4} / {TEST_GAME_COUNT:4}, Blue wins = {blue_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}");
 
-            for step in 0..STEPS {
+            'training_loop: for step in 0..STEPS {
                 let existing_actor = current_actor
                     .clone()
                     .make_untrainable()
@@ -835,6 +839,11 @@ mod tests {
                     }
 
                     println!("[train_steps={train_steps}, capacity={capacity}, future_discount={future_discount}, epsilon={epsilon}] After {:4} games:           Red wins = {red_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}, Blue wins = {blue_wins:4} / {TEST_GAME_COUNT:4}", (step + 1) * STEP_GAME_COUNT);
+
+                    if blue_wins as f32 / TEST_GAME_COUNT as f32 > 0.85 {
+                        println!("Model seems good enough, ending training");
+                        break 'training_loop;
+                    }
                 }
             }
 
