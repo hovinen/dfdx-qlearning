@@ -313,7 +313,7 @@ mod tests {
         use crate::actor::{
             Actor, ActorState, Engine, EnumerablePlayer, NaiveActor, TrainableActor,
         };
-        use crate::game_logger::DisplayGameLogger;
+        use crate::game_logger::{DisplayGameLogger, TrivialGameLogger};
         use dfdx::{
             nn::builders::Linear,
             prelude::ReLU,
@@ -369,7 +369,7 @@ mod tests {
             count_player: CellState,
         ) -> u32 {
             let mut wins = 0;
-            let engine = Engine::new(DisplayGameLogger);
+            let engine = Engine::new(TrivialGameLogger);
             for _ in 0..game_count {
                 match engine.play_once(actors) {
                     Some(c) if c == count_player => {
@@ -382,7 +382,7 @@ mod tests {
         }
 
         #[rstest::rstest]
-        #[case(10, 10000, 1.0, 0.3)]
+        #[case(10, 10000, 1.0, 1.0)]
         #[ignore = "Test for diagnostic purposes only"]
         fn model_improves_with_training(
             #[case] train_steps: usize,
@@ -390,8 +390,6 @@ mod tests {
             #[case] future_discount: f32,
             #[case] epsilon: f32,
         ) -> Result<()> {
-            use crate::game_logger::TrivialGameLogger;
-
             const STEPS: usize = 100;
             const STEP_GAME_COUNT: usize = 200;
             const TEST_GAME_COUNT: usize = 100;
@@ -465,7 +463,7 @@ mod tests {
 
                     println!("[train_steps={train_steps}, capacity={capacity}, future_discount={future_discount}, epsilon={epsilon}] After {:4} games:           X wins = {x_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}, O wins = {o_wins:4} / {TEST_GAME_COUNT:4}", (step + 1) * STEP_GAME_COUNT);
 
-                    if o_wins as f32 / TEST_GAME_COUNT as f32 > 0.9 {
+                    if o_wins as f32 / TEST_GAME_COUNT as f32 > 0.95 {
                         println!("Model seems good enough, ending training");
                         break 'training_loop;
                     }
@@ -473,19 +471,19 @@ mod tests {
             }
 
             println!("Sample game against naive actor:");
-            engine.play_once(&[
+            Engine::new(DisplayGameLogger).play_once(&[
                 (&CellState::X, &naive_actor),
                 (&CellState::O, &current_actor),
             ]);
             println!("Sample game against previous trained actor:");
-            engine.play_once(&[
+            Engine::new(DisplayGameLogger).play_once(&[
                 (&CellState::X, &previous_actor),
                 (&CellState::O, &current_actor),
             ]);
 
             current_actor.1.save("models/tictactoe.npz")?;
 
-            verify_that!(o_wins as f32 / TEST_GAME_COUNT as f32, ge(0.80))
+            verify_that!(o_wins as f32 / TEST_GAME_COUNT as f32, ge(0.90))
         }
 
         #[derive(Default, Debug, Eq, PartialEq, Clone, Hash)]
@@ -683,7 +681,7 @@ mod tests {
         use crate::actor::{
             Actor, ActorState, Engine, EnumerablePlayer, NaiveActor, TrainableActor,
         };
-        use crate::game_logger::DisplayGameLogger;
+        use crate::game_logger::{DisplayGameLogger, TrivialGameLogger};
         use dfdx::{
             nn::builders::Linear,
             prelude::ReLU,
@@ -745,7 +743,7 @@ mod tests {
             count_player: CellState,
         ) -> u32 {
             let mut wins = 0;
-            let engine = Engine::new(DisplayGameLogger);
+            let engine = Engine::new(TrivialGameLogger);
             for _ in 0..game_count {
                 match engine.play_once(actors) {
                     Some(c) if c == count_player => {
@@ -758,7 +756,7 @@ mod tests {
         }
 
         #[rstest::rstest]
-        #[case(10, 10000, 1.0, 0.3)]
+        #[case(10, 10000, 1.0, 1.0)]
         #[ignore = "Test for diagnostic purposes only"]
         fn model_improves_with_training(
             #[case] train_steps: usize,
@@ -1042,6 +1040,10 @@ mod tests {
             }
         }
 
-        type ConnectFourNetwork = ((Linear<42, 48>, ReLU), Linear<48, 7>);
+        type ConnectFourNetwork = (
+            (Linear<42, 96>, ReLU),
+            (Linear<96, 96>, ReLU),
+            Linear<96, 7>,
+        );
     }
 }

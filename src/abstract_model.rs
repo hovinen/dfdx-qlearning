@@ -18,17 +18,17 @@ use std::{
 
 /// Factor by which epsilon, the probability of choosing a random action rather than using the
 /// model, decays in each training iteration.
-const EPSILON_DECAY: f32 = 0.9995;
+const EPSILON_DECAY: f32 = 0.99995;
 
 /// The minimum value of epsilon, the probability of choosing a random action rather than using the
 /// model. It will decay until it reaches this point.
 const MIN_EPSILON: f32 = 0.01;
 
 /// Contribution of training model when updating the ground model.
-const TAU: f32 = 0.02;
+const TAU: f32 = 0.001;
 
 /// Time steps after which we update the ground model with the training model.
-const C: usize = 200;
+const C: usize = 20;
 
 pub trait EncodableState<const N_FEATURES: usize, Context> {
     fn encode<D: Device<f32>>(
