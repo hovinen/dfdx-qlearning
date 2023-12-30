@@ -2,7 +2,7 @@ use dfdx::{
     nn::modules::*,
     optim::Adam,
     prelude::{mse_loss, BuildOnDevice, DeviceBuildExt, Optimizer, ZeroGrads},
-    shapes::{Axis, Const, Rank1},
+    shapes::{Const, Rank1},
     tensor::{AutoDevice, Cpu, HasErr, OwnedTape, Tensor, TensorFrom, Trace},
     tensor_ops::{AdamConfig, Backward, Device, WeightDecay},
 };
@@ -152,9 +152,7 @@ where
     }
 
     pub fn evaluate(&self, state: &State, context: Context) -> Vec<f32> {
-        let input = state
-            .encode(context, &self.device)
-            .normalize::<Axis<0>>(0.001);
+        let input = state.encode(context, &self.device);
         self.network.evaluate(&input).as_vec()
     }
 
@@ -206,10 +204,7 @@ where
             state_count += 1;
         }
         if !x.is_empty() && !y.is_empty() {
-            let x_tensor = self
-                .device
-                .tensor((x, (state_count, Const)))
-                .normalize::<Axis<1>>(0.001);
+            let x_tensor = self.device.tensor((x, (state_count, Const)));
             let y_tensor = self.device.tensor((y, (state_count, Const)));
             self.network.train(&x_tensor, &y_tensor);
         }

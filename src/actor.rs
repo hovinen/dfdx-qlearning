@@ -322,6 +322,7 @@ mod tests {
             tensor_ops::Device,
         };
         use googletest::prelude::*;
+        use rstest::rstest;
         use std::{
             fmt::{Debug, Display},
             hash::Hash,
@@ -363,6 +364,34 @@ mod tests {
             )
         }
 
+        #[rstest]
+        #[case([['X', 'X', ' '], ['O', ' ', ' '], [' ', 'O', ' ']], CellState::X, 0, 2)]
+        #[case([['X', ' ', ' '], ['O', 'X', 'O'], [' ', ' ', ' ']], CellState::X, 2, 2)]
+        #[case([['O', 'X', ' '], ['X', 'O', 'X'], [' ', 'X', ' ']], CellState::O, 2, 2)]
+        #[case([['O', 'O', ' '], [' ', ' ', 'X'], [' ', 'X', ' ']], CellState::O, 0, 2)]
+        #[case([['X', 'X', ' '], ['O', ' ', ' '], [' ', 'O', ' ']], CellState::O, 0, 2)]
+        #[case([['O', 'O', ' '], [' ', ' ', 'X'], [' ', 'X', ' ']], CellState::X, 0, 2)]
+        fn winning_move_is_chosen(
+            #[case] board_state: [[char; 3]; 3],
+            #[case] player: CellState,
+            #[case] chosen_row: u8,
+            #[case] chosen_col: u8,
+        ) -> Result<()> {
+            let model: AbstractModel<TicTacToeState, _, _, TicTacToeNetwork, 9, 9> =
+                AbstractModel::load("models/tictactoe.npz", 10, 0.9, 0.3, 10000)?;
+            let state = TicTacToeState(board_state.map(|row| row.map(|cell| cell.into())));
+            let candidates = state.available_actions();
+
+            let value = model.choose_from_model_only(&state, player.clone(), &candidates);
+
+            dbg!(model.evaluate(&state, player));
+
+            verify_that!(
+                value,
+                matches_pattern!(TicTacToeAction(eq(chosen_row), eq(chosen_col)))
+            )
+        }
+
         fn win_count_after_n_games(
             game_count: u32,
             actors: &[(&CellState, &dyn Actor<TicTacToeState, TicTacToeAction>)],
@@ -390,7 +419,7 @@ mod tests {
             #[case] future_discount: f32,
             #[case] epsilon: f32,
         ) -> Result<()> {
-            const STEPS: usize = 100;
+            const STEPS: usize = 60;
             const STEP_GAME_COUNT: usize = 200;
             const TEST_GAME_COUNT: usize = 100;
             let mut current_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
@@ -417,7 +446,12 @@ mod tests {
                     None | Some(CellState::Empty) => draws += 1,
                 }
             }
-            println!("[train_steps={train_steps}, capacity={capacity}, future_discount={future_discount}, epsilon={epsilon}] After    0 games:           X wins = {x_wins:4} / {TEST_GAME_COUNT:4}, O wins = {o_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}");
+            let mut stats = vec![(
+                0,
+                x_wins as f64 / TEST_GAME_COUNT as f64,
+                o_wins as f64 / TEST_GAME_COUNT as f64,
+                draws as f64 / TEST_GAME_COUNT as f64,
+            )];
 
             'training_loop: for step in 0..STEPS {
                 let existing_actor = current_actor
@@ -461,7 +495,12 @@ mod tests {
                         }
                     }
 
-                    println!("[train_steps={train_steps}, capacity={capacity}, future_discount={future_discount}, epsilon={epsilon}] After {:4} games:           X wins = {x_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}, O wins = {o_wins:4} / {TEST_GAME_COUNT:4}", (step + 1) * STEP_GAME_COUNT);
+                    stats.push((
+                        (step + 1) * STEP_GAME_COUNT,
+                        x_wins as f64 / TEST_GAME_COUNT as f64,
+                        o_wins as f64 / TEST_GAME_COUNT as f64,
+                        draws as f64 / TEST_GAME_COUNT as f64,
+                    ));
 
                     if o_wins as f32 / TEST_GAME_COUNT as f32 > 0.95 {
                         println!("Model seems good enough, ending training");
@@ -469,6 +508,31 @@ mod tests {
                     }
                 }
             }
+
+            let mut plot = plotly::Plot::new();
+            let trace_x = plotly::Scatter::new(
+                stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
+                stats.iter().map(|(_, x, _, _)| *x).collect::<Vec<_>>(),
+            )
+            .name("X wins")
+            .mode(plotly::common::Mode::Lines);
+            plot.add_trace(trace_x);
+            let trace_o = plotly::Scatter::new(
+                stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
+                stats.iter().map(|(_, _, o, _)| *o).collect::<Vec<_>>(),
+            )
+            .name("O wins")
+            .mode(plotly::common::Mode::Lines);
+            plot.add_trace(trace_o);
+            let trace_d = plotly::Scatter::new(
+                stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
+                stats.iter().map(|(_, _, _, d)| *d).collect::<Vec<_>>(),
+            )
+            .name("draws")
+            .mode(plotly::common::Mode::Lines);
+            plot.add_trace(trace_d);
+            println!("Writing graph of results to stats.html");
+            plot.write_html("stats.html");
 
             println!("Sample game against naive actor:");
             Engine::new(DisplayGameLogger).play_once(&[
@@ -506,6 +570,17 @@ mod tests {
                     CellState::X => write!(f, "X"),
                     CellState::O => write!(f, "O"),
                     CellState::Empty => write!(f, "-"),
+                }
+            }
+        }
+
+        impl From<char> for CellState {
+            fn from(c: char) -> Self {
+                match c {
+                    'X' => CellState::X,
+                    'O' => CellState::O,
+                    ' ' => CellState::Empty,
+                    _ => panic!("Invalid cell state {c}"),
                 }
             }
         }
@@ -677,11 +752,11 @@ mod tests {
     }
 
     mod connectfour {
-        use crate::abstract_model::{AbstractModel, EncodableAction, EncodableState, Reward};
-        use crate::actor::{
-            Actor, ActorState, Engine, EnumerablePlayer, NaiveActor, TrainableActor,
+        use crate::{
+            abstract_model::{AbstractModel, EncodableAction, EncodableState, Reward},
+            actor::{Actor, ActorState, Engine, EnumerablePlayer, NaiveActor, TrainableActor},
+            game_logger::{DisplayGameLogger, TrivialGameLogger},
         };
-        use crate::game_logger::{DisplayGameLogger, TrivialGameLogger};
         use dfdx::{
             nn::builders::Linear,
             prelude::ReLU,
