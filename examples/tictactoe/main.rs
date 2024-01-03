@@ -15,6 +15,11 @@ use dfdx_qlearning::{
         game_logger::TrivialGameLogger,
     },
 };
+use plotly::{
+    common::{AxisSide, Mode, Title},
+    layout::Axis,
+    Layout, Plot, Scatter,
+};
 use std::{
     fmt::{Debug, Display},
     hash::Hash,
@@ -58,6 +63,7 @@ fn main() {
         x_wins as f64 / TEST_GAME_COUNT as f64,
         o_wins as f64 / TEST_GAME_COUNT as f64,
         draws as f64 / TEST_GAME_COUNT as f64,
+        EPSILON,
     )];
 
     'training_loop: for step in 0..STEPS {
@@ -66,7 +72,8 @@ fn main() {
             .make_untrainable()
             .switch_player(CellState::X);
         println!(
-            "[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={EPSILON}] Training games {:4} - {:4}",
+            "[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={:.3}] Training games {:4} - {:4}",
+            current_actor.1.epsilon(),
             step * STEP_GAME_COUNT,
             (step + 1) * STEP_GAME_COUNT - 1
         );
@@ -107,6 +114,7 @@ fn main() {
                 x_wins as f64 / TEST_GAME_COUNT as f64,
                 o_wins as f64 / TEST_GAME_COUNT as f64,
                 draws as f64 / TEST_GAME_COUNT as f64,
+                current_actor.1.epsilon(),
             ));
 
             if o_wins as f32 / TEST_GAME_COUNT as f32 > 0.95 {
@@ -133,29 +141,54 @@ fn main() {
     println!("Saved model to models/tictactoe.npz");
 }
 
-fn write_stats(stats: &[(usize, f64, f64, f64)]) {
-    let mut plot = plotly::Plot::new();
-    let trace_x = plotly::Scatter::new(
-        stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
-        stats.iter().map(|(_, x, _, _)| *x).collect::<Vec<_>>(),
+fn write_stats(stats: &[(usize, f64, f64, f64, f32)]) {
+    let mut plot = Plot::new();
+
+    let trace_x = Scatter::new(
+        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
+        stats.iter().map(|(_, x, _, _, _)| *x).collect::<Vec<_>>(),
     )
     .name("X wins")
-    .mode(plotly::common::Mode::Lines);
+    .mode(Mode::Lines);
     plot.add_trace(trace_x);
-    let trace_o = plotly::Scatter::new(
-        stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
-        stats.iter().map(|(_, _, o, _)| *o).collect::<Vec<_>>(),
+
+    let trace_o = Scatter::new(
+        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
+        stats.iter().map(|(_, _, o, _, _)| *o).collect::<Vec<_>>(),
     )
     .name("O wins")
-    .mode(plotly::common::Mode::Lines);
+    .mode(Mode::Lines);
     plot.add_trace(trace_o);
-    let trace_d = plotly::Scatter::new(
-        stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
-        stats.iter().map(|(_, _, _, d)| *d).collect::<Vec<_>>(),
+
+    let trace_d = Scatter::new(
+        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
+        stats.iter().map(|(_, _, _, d, _)| *d).collect::<Vec<_>>(),
     )
     .name("draws")
-    .mode(plotly::common::Mode::Lines);
+    .mode(Mode::Lines);
     plot.add_trace(trace_d);
+
+    let trace_epsilon = Scatter::new(
+        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(_, _, _, _, e)| *e as f64)
+            .collect::<Vec<_>>(),
+    )
+    .name("epsilon")
+    .mode(Mode::Lines)
+    .y_axis("y2");
+    plot.add_trace(trace_epsilon);
+
+    let layout = Layout::new()
+        .y_axis(Axis::new().title(Title::new("Proportion")))
+        .y_axis2(
+            Axis::new()
+                .title(Title::new("Epsilon"))
+                .overlaying("y")
+                .side(AxisSide::Right),
+        );
+    plot.set_layout(layout);
 
     const DIRECTORY: &str = "target/stats/tictactoe";
     std::fs::create_dir_all(DIRECTORY).unwrap();

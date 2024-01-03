@@ -166,6 +166,10 @@ where
     {
         Ok(self.network.model.save(path)?)
     }
+
+    pub fn epsilon(&self) -> f32 {
+        self.epsilon
+    }
 }
 
 impl<
