@@ -1,5 +1,5 @@
 use dfdx::{
-    nn::{builders::Linear, modules::Dropout},
+    nn::builders::Linear,
     prelude::ReLU,
     shapes::Rank1,
     tensor::{Tensor, TensorFrom},
@@ -65,8 +65,8 @@ fn main() {
             .clone()
             .make_untrainable()
             .switch_player(CellState::X);
-        print!(
-            "[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={EPSILON}] Training games {:4} - {:4}: ",
+        println!(
+            "[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={EPSILON}] Training games {:4} - {:4}",
             step * STEP_GAME_COUNT,
             (step + 1) * STEP_GAME_COUNT - 1
         );
@@ -349,12 +349,7 @@ impl EncodableAction for TicTacToeAction {
     }
 }
 
-type TicTacToeNetwork = (
-    (Linear<9, 32>, ReLU),
-    Dropout,
-    (Linear<32, 32>, ReLU),
-    Linear<32, 9>,
-);
+type TicTacToeNetwork = ((Linear<9, 32>, ReLU), Linear<32, 9>);
 
 #[cfg(test)]
 mod tests {
