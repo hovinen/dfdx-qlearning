@@ -48,15 +48,21 @@ fn main() {
             None | Some(CellState::Empty) => draws += 1,
         }
     }
-    println!("[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={EPSILON}] After    0 games:           Red wins = {red_wins:4} / {TEST_GAME_COUNT:4}, Blue wins = {blue_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}");
+
+    let mut stats = vec![(
+        0,
+        red_wins as f64 / TEST_GAME_COUNT as f64,
+        blue_wins as f64 / TEST_GAME_COUNT as f64,
+        draws as f64 / TEST_GAME_COUNT as f64,
+    )];
 
     'training_loop: for step in 0..STEPS {
         let existing_actor = current_actor
             .clone()
             .make_untrainable()
             .switch_player(CellState::Red);
-        print!(
-            "[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={EPSILON}] Training games {:4} - {:4}: ",
+        println!(
+            "[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={EPSILON}] Training games {:4} - {:4}",
             step * STEP_GAME_COUNT,
             (step + 1) * STEP_GAME_COUNT - 1
         );
@@ -92,7 +98,12 @@ fn main() {
                 }
             }
 
-            println!("[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={EPSILON}] After {:4} games:           Red wins = {red_wins:4} / {TEST_GAME_COUNT:4}, draws = {draws:4} / {TEST_GAME_COUNT:4}, Blue wins = {blue_wins:4} / {TEST_GAME_COUNT:4}", (step + 1) * STEP_GAME_COUNT);
+            stats.push((
+                (step + 1) * STEP_GAME_COUNT,
+                red_wins as f64 / TEST_GAME_COUNT as f64,
+                blue_wins as f64 / TEST_GAME_COUNT as f64,
+                draws as f64 / TEST_GAME_COUNT as f64,
+            ));
 
             if blue_wins as f32 / TEST_GAME_COUNT as f32 > 0.85 {
                 println!("Model seems good enough, ending training");
@@ -111,6 +122,31 @@ fn main() {
         (&CellState::Red, &previous_actor),
         (&CellState::Blue, &current_actor),
     ]);
+
+    let mut plot = plotly::Plot::new();
+    let trace_red = plotly::Scatter::new(
+        stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
+        stats.iter().map(|(_, x, _, _)| *x).collect::<Vec<_>>(),
+    )
+    .name("Red wins")
+    .mode(plotly::common::Mode::Lines);
+    plot.add_trace(trace_red);
+    let trace_blue = plotly::Scatter::new(
+        stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
+        stats.iter().map(|(_, _, o, _)| *o).collect::<Vec<_>>(),
+    )
+    .name("Blue wins")
+    .mode(plotly::common::Mode::Lines);
+    plot.add_trace(trace_blue);
+    let trace_d = plotly::Scatter::new(
+        stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
+        stats.iter().map(|(_, _, _, d)| *d).collect::<Vec<_>>(),
+    )
+    .name("Draws")
+    .mode(plotly::common::Mode::Lines);
+    plot.add_trace(trace_d);
+    println!("Writing graph of results to stats.html");
+    plot.write_html("stats.html");
 
     println!("Saving model to models/connectfour.npz");
     current_actor.1.save("models/connectfour.npz").unwrap();
