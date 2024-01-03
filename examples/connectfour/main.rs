@@ -15,7 +15,7 @@ use std::{
     hash::Hash,
 };
 
-const TRAIN_STEPS: usize = 10;
+const TRAIN_STEPS: usize = 100;
 const CAPACITY: usize = 10000;
 const FUTURE_DISCOUNT: f32 = 1.0;
 const EPSILON: f32 = 1.0;
@@ -334,11 +334,7 @@ impl EncodableAction for ConnectFourAction {
     }
 }
 
-type ConnectFourNetwork = (
-    (Linear<42, 96>, ReLU),
-    (Linear<96, 96>, ReLU),
-    Linear<96, 7>,
-);
+type ConnectFourNetwork = (Linear<42, 96>, ReLU, Linear<96, 96>, ReLU, Linear<96, 7>);
 
 #[cfg(test)]
 mod tests {
