@@ -29,7 +29,7 @@ const TRAIN_STEPS: usize = 100;
 const CAPACITY: usize = 10000;
 const FUTURE_DISCOUNT: f32 = 1.0;
 const EPSILON: f32 = 1.0;
-const STEPS: usize = 30;
+const STEPS: usize = 60;
 const STEP_GAME_COUNT: usize = 200;
 const TEST_GAME_COUNT: usize = 100;
 
@@ -389,7 +389,7 @@ impl EncodableAction for TicTacToeAction {
     }
 }
 
-type TicTacToeNetwork = ((Linear<9, 32>, ReLU), Linear<32, 9>);
+type TicTacToeNetwork = (Linear<9, 32>, ReLU, Linear<32, 32>, ReLU, Linear<32, 9>);
 
 #[cfg(test)]
 mod tests {
