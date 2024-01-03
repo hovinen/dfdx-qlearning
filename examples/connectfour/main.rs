@@ -123,33 +123,40 @@ fn main() {
         (&CellState::Blue, &current_actor),
     ]);
 
+    write_stats(&stats);
+
+    println!("Saving model to models/connectfour.npz");
+    current_actor.1.save("models/connectfour.npz").unwrap();
+}
+
+fn write_stats(stats: &[(usize, f64, f64, f64)]) {
     let mut plot = plotly::Plot::new();
-    let trace_red = plotly::Scatter::new(
+    let trace_x = plotly::Scatter::new(
         stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
         stats.iter().map(|(_, x, _, _)| *x).collect::<Vec<_>>(),
     )
-    .name("Red wins")
+    .name("X wins")
     .mode(plotly::common::Mode::Lines);
-    plot.add_trace(trace_red);
-    let trace_blue = plotly::Scatter::new(
+    plot.add_trace(trace_x);
+    let trace_o = plotly::Scatter::new(
         stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
         stats.iter().map(|(_, _, o, _)| *o).collect::<Vec<_>>(),
     )
-    .name("Blue wins")
+    .name("O wins")
     .mode(plotly::common::Mode::Lines);
-    plot.add_trace(trace_blue);
+    plot.add_trace(trace_o);
     let trace_d = plotly::Scatter::new(
         stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
         stats.iter().map(|(_, _, _, d)| *d).collect::<Vec<_>>(),
     )
-    .name("Draws")
+    .name("draws")
     .mode(plotly::common::Mode::Lines);
     plot.add_trace(trace_d);
-    println!("Writing graph of results to stats.html");
-    plot.write_html("stats.html");
 
-    println!("Saving model to models/connectfour.npz");
-    current_actor.1.save("models/connectfour.npz").unwrap();
+    const DIRECTORY: &str = "target/stats/connectfour";
+    std::fs::create_dir_all(DIRECTORY).unwrap();
+    println!("Writing graph of results to {DIRECTORY}/stats.html");
+    plot.write_html(format!("{DIRECTORY}/stats.html"));
 }
 
 #[derive(Default, Debug, Eq, PartialEq, Clone, Hash)]

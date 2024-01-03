@@ -116,6 +116,24 @@ fn main() {
         }
     }
 
+    println!("Sample game against naive actor:");
+    Engine::new(DisplayGameLogger).play_once(&[
+        (&CellState::X, &naive_actor),
+        (&CellState::O, &current_actor),
+    ]);
+    println!("Sample game against previous trained actor:");
+    Engine::new(DisplayGameLogger).play_once(&[
+        (&CellState::X, &previous_actor),
+        (&CellState::O, &current_actor),
+    ]);
+
+    write_stats(&stats);
+
+    current_actor.1.save("models/tictactoe.npz").unwrap();
+    println!("Saved model to models/tictactoe.npz");
+}
+
+fn write_stats(stats: &[(usize, f64, f64, f64)]) {
     let mut plot = plotly::Plot::new();
     let trace_x = plotly::Scatter::new(
         stats.iter().map(|(i, _, _, _)| *i).collect::<Vec<_>>(),
@@ -138,22 +156,11 @@ fn main() {
     .name("draws")
     .mode(plotly::common::Mode::Lines);
     plot.add_trace(trace_d);
-    println!("Writing graph of results to stats.html");
-    plot.write_html("stats.html");
 
-    println!("Sample game against naive actor:");
-    Engine::new(DisplayGameLogger).play_once(&[
-        (&CellState::X, &naive_actor),
-        (&CellState::O, &current_actor),
-    ]);
-    println!("Sample game against previous trained actor:");
-    Engine::new(DisplayGameLogger).play_once(&[
-        (&CellState::X, &previous_actor),
-        (&CellState::O, &current_actor),
-    ]);
-
-    current_actor.1.save("models/tictactoe.npz").unwrap();
-    println!("Saved model to models/tictactoe.npz");
+    const DIRECTORY: &str = "target/stats/tictactoe";
+    std::fs::create_dir_all(DIRECTORY).unwrap();
+    println!("Writing graph of results to {DIRECTORY}/stats.html");
+    plot.write_html(format!("{DIRECTORY}/stats.html"));
 }
 
 #[derive(Default, Debug, Eq, PartialEq, Clone, Hash)]
