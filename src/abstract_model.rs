@@ -3,7 +3,7 @@ use dfdx::{
     optim::Adam,
     prelude::{mse_loss, BuildOnDevice, DeviceBuildExt, Optimizer, ZeroGrads},
     shapes::{Const, Rank1},
-    tensor::{AutoDevice, Cpu, OwnedTape, Tensor, TensorFrom, Trace},
+    tensor::{AutoDevice, Cuda, OwnedTape, Tensor, TensorFrom, Trace},
     tensor_ops::{AdamConfig, Backward, Device, WeightDecay},
 };
 use multimap::MultiMap;
@@ -54,11 +54,11 @@ pub struct AbstractModel<
     State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone,
     Context,
     Action: EncodableAction,
-    Model: BuildOnDevice<Cpu, f32>,
+    Model: BuildOnDevice<Cuda, f32>,
     const N_FEATURES: usize,
     const N_ACTIONS: usize,
 > where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone,
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug + Clone,
 {
     device: AutoDevice,
     network: NeuralNetwork<Model, N_FEATURES, N_ACTIONS>,
@@ -73,14 +73,14 @@ impl<
         State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone,
         Context: Clone,
         Action: EncodableAction + Clone,
-        Model: BuildOnDevice<Cpu, f32>,
+        Model: BuildOnDevice<Cuda, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
     > AbstractModel<State, Context, Action, Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug
         + Clone
-        + Module<Tensor<Rank1<N_FEATURES>, f32, Cpu>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cpu>>,
+        + Module<Tensor<Rank1<N_FEATURES>, f32, Cuda>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cuda>>,
 {
     pub fn new(train_steps: usize, future_discount: f32, epsilon: f32, capacity: usize) -> Self {
         let device = AutoDevice::seed_from_u64(thread_rng().gen());
@@ -104,7 +104,7 @@ where
         capacity: usize,
     ) -> std::io::Result<Self>
     where
-        <Model as BuildOnDevice<Cpu, f32>>::Built: dfdx::nn::LoadFromNpz<f32, Cpu>,
+        <Model as BuildOnDevice<Cuda, f32>>::Built: dfdx::nn::LoadFromNpz<f32, Cuda>,
     {
         let device = AutoDevice::seed_from_u64(thread_rng().gen());
         let network = NeuralNetwork::load(path, &device, train_steps)?;
@@ -210,7 +210,7 @@ where
 
     pub fn save(&self, path: &str) -> std::io::Result<()>
     where
-        <Model as BuildOnDevice<Cpu, f32>>::Built: dfdx::nn::SaveToNpz<f32, Cpu>,
+        <Model as BuildOnDevice<Cuda, f32>>::Built: dfdx::nn::SaveToNpz<f32, Cuda>,
     {
         Ok(self.network.model.save(path)?)
     }
@@ -228,17 +228,17 @@ impl<
         State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone + Debug,
         Context: Clone,
         Action: EncodableAction + Clone + Debug,
-        Model: BuildOnDevice<Cpu, f32>,
+        Model: BuildOnDevice<Cuda, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
     > AbstractModel<State, Context, Action, Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug
         + Clone
-        + Module<Tensor<Rank1<N_FEATURES>, f32, Cpu>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cpu>>
+        + Module<Tensor<Rank1<N_FEATURES>, f32, Cuda>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cuda>>
         + ModuleMut<
-            Tensor<(usize, Const<N_FEATURES>), f32, Cpu, OwnedTape<f32, Cpu>>,
-            Output = Tensor<(usize, Const<N_ACTIONS>), f32, Cpu, OwnedTape<f32, Cpu>>,
+            Tensor<(usize, Const<N_FEATURES>), f32, Cuda, OwnedTape<f32, Cuda>>,
+            Output = Tensor<(usize, Const<N_ACTIONS>), f32, Cuda, OwnedTape<f32, Cuda>>,
         >,
 {
     pub fn train(&mut self, context: Context) {
@@ -302,25 +302,25 @@ where
 
 #[derive(Debug, Clone)]
 struct NeuralNetwork<
-    Model: BuildOnDevice<Cpu, f32>,
+    Model: BuildOnDevice<Cuda, f32>,
     const N_FEATURES: usize,
     const N_ACTIONS: usize,
 > where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone,
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug + Clone,
 {
-    model: <Model as BuildOnDevice<Cpu, f32>>::Built,
-    model_training: <Model as BuildOnDevice<Cpu, f32>>::Built,
-    optimiser: Adam<<Model as BuildOnDevice<Cpu, f32>>::Built, f32, Cpu>,
+    model: <Model as BuildOnDevice<Cuda, f32>>::Built,
+    model_training: <Model as BuildOnDevice<Cuda, f32>>::Built,
+    optimiser: Adam<<Model as BuildOnDevice<Cuda, f32>>::Built, f32, Cuda>,
     train_steps: usize,
     tau: f32,
 }
 
-impl<Model: BuildOnDevice<Cpu, f32>, const N_FEATURES: usize, const N_ACTIONS: usize>
+impl<Model: BuildOnDevice<Cuda, f32>, const N_FEATURES: usize, const N_ACTIONS: usize>
     NeuralNetwork<Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug
         + Clone
-        + Module<Tensor<Rank1<N_FEATURES>, f32, Cpu>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cpu>>,
+        + Module<Tensor<Rank1<N_FEATURES>, f32, Cuda>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cuda>>,
 {
     pub fn new(device: &AutoDevice, train_steps: usize) -> Self {
         let model = device.build_module::<Model, f32>();
@@ -346,7 +346,7 @@ where
         device: &AutoDevice,
         train_steps: usize,
     ) -> std::io::Result<Self> {
-        let mut model: <Model as BuildOnDevice<Cpu, f32>>::Built =
+        let mut model: <Model as BuildOnDevice<Cuda, f32>>::Built =
             device.build_module::<Model, f32>();
         model
             .load(path)
@@ -370,8 +370,8 @@ where
 
     fn evaluate(
         &self,
-        input: &Tensor<Rank1<N_FEATURES>, f32, Cpu>,
-    ) -> Tensor<Rank1<N_ACTIONS>, f32, Cpu> {
+        input: &Tensor<Rank1<N_FEATURES>, f32, Cuda>,
+    ) -> Tensor<Rank1<N_ACTIONS>, f32, Cuda> {
         self.model.forward(input.clone())
     }
 
@@ -383,20 +383,20 @@ where
     }
 }
 
-impl<Model: BuildOnDevice<Cpu, f32>, const N_FEATURES: usize, const N_ACTIONS: usize>
+impl<Model: BuildOnDevice<Cuda, f32>, const N_FEATURES: usize, const N_ACTIONS: usize>
     NeuralNetwork<Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug
         + Clone
         + ModuleMut<
-            Tensor<(usize, Const<N_FEATURES>), f32, Cpu, OwnedTape<f32, Cpu>>,
-            Output = Tensor<(usize, Const<N_ACTIONS>), f32, Cpu, OwnedTape<f32, Cpu>>,
-        > + TensorCollection<f32, Cpu>,
+            Tensor<(usize, Const<N_FEATURES>), f32, Cuda, OwnedTape<f32, Cuda>>,
+            Output = Tensor<(usize, Const<N_ACTIONS>), f32, Cuda, OwnedTape<f32, Cuda>>,
+        > + TensorCollection<f32, Cuda>,
 {
     fn train(
         &mut self,
-        input: &Tensor<(usize, Const<N_FEATURES>), f32, Cpu>,
-        output: &Tensor<(usize, Const<N_ACTIONS>), f32, Cpu>,
+        input: &Tensor<(usize, Const<N_FEATURES>), f32, Cuda>,
+        output: &Tensor<(usize, Const<N_ACTIONS>), f32, Cuda>,
     ) {
         let mut gradients = self.model_training.alloc_grads();
         for _ in 0..self.train_steps {
