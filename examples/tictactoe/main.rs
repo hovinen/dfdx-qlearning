@@ -190,7 +190,7 @@ fn write_stats(stats: &[(usize, f64, f64, f64, f32)]) {
         );
     plot.set_layout(layout);
 
-    const DIRECTORY: &str = "target/stats/tictactoe";
+    const DIRECTORY: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/target/stats/tictactoe");
     std::fs::create_dir_all(DIRECTORY).unwrap();
     println!("Writing graph of results to {DIRECTORY}/stats.html");
     plot.write_html(format!("{DIRECTORY}/stats.html"));

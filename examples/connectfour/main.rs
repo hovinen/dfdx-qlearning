@@ -153,7 +153,7 @@ fn write_stats(stats: &[(usize, f64, f64, f64)]) {
     .mode(plotly::common::Mode::Lines);
     plot.add_trace(trace_d);
 
-    const DIRECTORY: &str = "target/stats/connectfour";
+    const DIRECTORY: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/target/stats/connectfour");
     std::fs::create_dir_all(DIRECTORY).unwrap();
     println!("Writing graph of results to {DIRECTORY}/stats.html");
     plot.write_html(format!("{DIRECTORY}/stats.html"));
