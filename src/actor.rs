@@ -5,7 +5,7 @@ use crate::{
 use dfdx::{
     prelude::{BuildOnDevice, Module, ModuleMut, TensorCollection},
     shapes::{Const, Rank1},
-    tensor::{Cpu, OwnedTape, Tensor},
+    tensor::{Cuda, OwnedTape, Tensor},
 };
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -123,7 +123,7 @@ pub struct TrainableActor<
     State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
     Action: EncodableAction,
     Player,
-    Model: BuildOnDevice<Cpu, f32>,
+    Model: BuildOnDevice<Cuda, f32>,
     const N_FEATURES: usize,
     const N_ACTIONS: usize,
 >(
@@ -131,18 +131,18 @@ pub struct TrainableActor<
     pub AbstractModel<State, Player, Action, Model, N_FEATURES, N_ACTIONS>,
 )
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone;
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug + Clone;
 
 impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
         Action: EncodableAction,
         Player,
-        Model: BuildOnDevice<Cpu, f32>,
+        Model: BuildOnDevice<Cuda, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
     > TrainableActor<State, Action, Player, Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone,
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug + Clone,
 {
     #[allow(unused)]
     pub fn make_untrainable(
@@ -156,18 +156,18 @@ impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
         Action: EncodableAction + Clone,
         Player: Clone,
-        Model: BuildOnDevice<Cpu, f32>,
+        Model: BuildOnDevice<Cuda, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
     > Actor<State, Action> for TrainableActor<State, Action, Player, Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug
         + Clone
-        + Module<Tensor<Rank1<N_FEATURES>, f32, Cpu>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cpu>>
+        + Module<Tensor<Rank1<N_FEATURES>, f32, Cuda>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cuda>>
         + ModuleMut<
-            Tensor<(usize, Const<N_FEATURES>), f32, Cpu, OwnedTape<f32, Cpu>>,
-            Output = Tensor<(usize, Const<N_ACTIONS>), f32, Cpu, OwnedTape<f32, Cpu>>,
-        > + TensorCollection<f32, Cpu>,
+            Tensor<(usize, Const<N_FEATURES>), f32, Cuda, OwnedTape<f32, Cuda>>,
+            Output = Tensor<(usize, Const<N_ACTIONS>), f32, Cuda, OwnedTape<f32, Cuda>>,
+        > + TensorCollection<f32, Cuda>,
 {
     fn play_step_to_train(&self, state: &mut State) -> Option<Step<State, Action>> {
         let old_state = state.clone();
@@ -211,7 +211,7 @@ pub struct UntrainableActor<
     State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
     Action: EncodableAction,
     Player,
-    Model: BuildOnDevice<Cpu, f32>,
+    Model: BuildOnDevice<Cuda, f32>,
     const N_FEATURES: usize,
     const N_ACTIONS: usize,
 >(
@@ -219,18 +219,18 @@ pub struct UntrainableActor<
     AbstractModel<State, Player, Action, Model, N_FEATURES, N_ACTIONS>,
 )
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone;
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug + Clone;
 
 impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
         Action: EncodableAction,
         Player,
-        Model: BuildOnDevice<Cpu, f32>,
+        Model: BuildOnDevice<Cuda, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
     > UntrainableActor<State, Action, Player, Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone,
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug + Clone,
 {
     #[allow(unused)]
     pub fn switch_player(self, new_player: Player) -> Self {
@@ -242,14 +242,14 @@ impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
         Action: EncodableAction + Clone,
         Player: Clone,
-        Model: BuildOnDevice<Cpu, f32>,
+        Model: BuildOnDevice<Cuda, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
     > Actor<State, Action> for UntrainableActor<State, Action, Player, Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug
         + Clone
-        + Module<Tensor<Rank1<N_FEATURES>, f32, Cpu>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cpu>>,
+        + Module<Tensor<Rank1<N_FEATURES>, f32, Cuda>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cuda>>,
 {
     fn play_step_to_train(&self, state: &mut State) -> Option<Step<State, Action>> {
         self.play_step(state);
