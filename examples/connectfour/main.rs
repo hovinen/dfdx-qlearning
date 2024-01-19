@@ -339,7 +339,7 @@ type ConnectFourNetwork = (Linear<42, 96>, ReLU, Linear<96, 96>, ReLU, Linear<96
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dfdx_qlearning::actor::Actor;
+    use dfdx_qlearning::{actor::Actor, game_logger::TrivialGameLogger};
     use googletest::prelude::*;
 
     #[test]
