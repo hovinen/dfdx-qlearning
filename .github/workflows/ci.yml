@@ -54,5 +54,7 @@ jobs:
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
-      - name: cargo test --locked
-        run: cargo test --locked --all-features --release
+      - name: Tic-Tac-Toe tests
+        run: cargo test --locked --all-features --release --example tictactoe
+      - name: Connect-4 tests
+        run: cargo test --locked --all-features --release --example connectfour
