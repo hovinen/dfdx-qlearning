@@ -1,3 +1,4 @@
+mod play;
 mod train;
 
 use clap::{Parser, Subcommand};
@@ -11,6 +12,7 @@ use dfdx_qlearning::{
     abstract_model::{EncodableAction, EncodableState, Reward},
     actor::{ActorState, EnumerablePlayer},
 };
+use play::play;
 use std::fmt::Display;
 use train::train;
 
@@ -20,7 +22,7 @@ fn main() {
         None => {
             eprintln!("Usage: tictactoe play|train");
         }
-        Some(Command::Play) => todo!(),
+        Some(Command::Play) => play(),
         Some(Command::Train) => train(),
     };
 }
