@@ -13,6 +13,7 @@ rand_distr = "0.4.3"
 rand_xoshiro = "0.6.0"
 
 [dev-dependencies]
+clap = { version = "4.5.1", features = ["derive"] }
 googletest = "0.11.0"
 itertools = "0.12.0"
 plotly = { version = "0.8.4", features = ["ndarray", "plotly_ndarray"] }

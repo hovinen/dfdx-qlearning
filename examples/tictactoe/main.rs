@@ -1,5 +1,6 @@
 mod train;
 
+use clap::{Parser, Subcommand};
 use dfdx::{
     nn::{builders::Linear, modules::ReLU},
     shapes::Rank1,
@@ -14,7 +15,26 @@ use std::fmt::Display;
 use train::train;
 
 fn main() {
-    train();
+    let cli = Cli::parse();
+    match cli.command {
+        None => {
+            eprintln!("Usage: tictactoe play|train");
+        }
+        Some(Command::Play) => todo!(),
+        Some(Command::Train) => train(),
+    };
+}
+
+#[derive(Parser)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    Train,
+    Play,
 }
 
 #[derive(Default, Debug, Eq, PartialEq, Clone, Hash)]
