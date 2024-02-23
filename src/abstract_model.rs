@@ -28,7 +28,7 @@ const MIN_EPSILON: f32 = 0.01;
 const TAU: f32 = 0.001;
 
 /// Time steps after which we update the ground model with the training model.
-const C: usize = 20;
+const C: usize = 2;
 
 pub trait EncodableState<const N_FEATURES: usize, Context> {
     fn encode<D: Device<f32>>(
