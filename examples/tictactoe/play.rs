@@ -89,17 +89,22 @@ impl eframe::App for App {
                 true
             };
             ui.add_enabled_ui(enabled, |ui| {
-                let cell_size = ui.clip_rect().width().min(ui.clip_rect().height()) / 3.0;
-                let cell_x_start = if ui.clip_rect().width() < ui.clip_rect().height() {
-                    cell_size / 2.0
-                } else {
-                    ui.clip_rect().center().x - cell_size * 3.0 / 2.0 + cell_size / 2.0
-                };
-                let cell_y_start = if ui.clip_rect().width() < ui.clip_rect().height() {
-                    ui.clip_rect().center().y - cell_size * 3.0 / 2.0 + cell_size / 2.0
-                } else {
-                    cell_size / 2.0
-                };
+                let (ui_size, cell_x_start, cell_y_start) =
+                    if ui.clip_rect().width() < ui.clip_rect().height() {
+                        (
+                            ui.clip_rect().width(),
+                            0.0,
+                            ui.clip_rect().center().y - ui.clip_rect().width() / 3.0,
+                        )
+                    } else {
+                        let ui_size = ui.clip_rect().height() * 0.75;
+                        (
+                            ui_size,
+                            ui.clip_rect().center().x - ui_size / 3.0,
+                            ui.clip_rect().center().y - ui_size / 3.0,
+                        )
+                    };
+                let cell_size = ui_size / 3.0;
                 for i in 0..3 {
                     let mut cell_centre =
                         egui::pos2(cell_x_start, cell_y_start + i as f32 * cell_size);
