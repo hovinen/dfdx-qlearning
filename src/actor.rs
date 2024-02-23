@@ -154,7 +154,7 @@ where
 
 impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
-        Action: EncodableAction + Clone,
+        Action: EncodableAction + Clone + Debug,
         Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
@@ -240,7 +240,7 @@ where
 
 impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
-        Action: EncodableAction + Clone,
+        Action: EncodableAction + Clone + Debug,
         Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,

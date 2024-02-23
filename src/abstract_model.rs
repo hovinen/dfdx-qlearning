@@ -3,7 +3,7 @@ use dfdx::{
     optim::Adam,
     prelude::{mse_loss, BuildOnDevice, DeviceBuildExt, Optimizer, ZeroGrads},
     shapes::{Const, Rank1},
-    tensor::{AutoDevice, Cpu, HasErr, OwnedTape, Tensor, TensorFrom, Trace},
+    tensor::{AutoDevice, Cpu, OwnedTape, Tensor, TensorFrom, Trace},
     tensor_ops::{AdamConfig, Backward, Device, WeightDecay},
 };
 use multimap::MultiMap;
@@ -25,7 +25,7 @@ const EPSILON_DECAY: f32 = 0.99995;
 const MIN_EPSILON: f32 = 0.01;
 
 /// Contribution of training model when updating the ground model.
-const TAU: f32 = 0.001;
+const TAU: f32 = 0.01;
 
 /// Time steps after which we update the ground model with the training model.
 const C: usize = 2;
@@ -120,7 +120,10 @@ where
         state: &State,
         context: Context,
         candidates: &[Action],
-    ) -> Action {
+    ) -> Action
+    where
+        Action: Debug,
+    {
         let mut rng = Xoshiro256PlusPlus::from_rng(thread_rng()).unwrap();
         if rng.gen_range(0.0..1.0) < self.epsilon {
             candidates[rng.gen_range(0..candidates.len())].clone()
@@ -134,13 +137,17 @@ where
         state: &State,
         context: Context,
         candidates: &[Action],
-    ) -> Action {
+    ) -> Action
+    where
+        Action: Debug,
+    {
         assert!(!candidates.is_empty());
         let candidate_indices = candidates
             .iter()
             .map(|c| c.encode())
             .collect::<HashSet<_>>();
         let scores = self.evaluate(state, context);
+        self.output_scores(&scores, candidates);
         let chosen_index = scores
             .into_iter()
             .enumerate()
@@ -149,6 +156,16 @@ where
             .expect("No candidate actions present")
             .0;
         Action::decode(chosen_index)
+    }
+
+    fn output_scores(&self, scores: &[f32], candidates: &[Action])
+    where
+        Action: Debug,
+    {
+        println!("Scores:");
+        for candidate in candidates {
+            println!("{candidate:?}: {}", scores[candidate.encode()]);
+        }
     }
 
     pub fn evaluate(&self, state: &State, context: Context) -> Vec<f32> {
@@ -328,32 +345,7 @@ where
     }
 
     fn update_model(&mut self) {
-        struct Updater;
-        impl TensorVisitor<f32, Cpu> for Updater {
-            type Viewer = (ViewTensorRef, ViewTensorRef);
-            type Err = <Cpu as HasErr>::Err;
-            type E2 = f32;
-            type D2 = Cpu;
-
-            fn visit<S: dfdx::shapes::Shape>(
-                &mut self,
-                _: TensorOptions<S, f32, Cpu>,
-                (model, model_training): <Self::Viewer as TensorViewer>::View<
-                    '_,
-                    Tensor<S, f32, Cpu>,
-                >,
-            ) -> Result<Option<Tensor<S, Self::E2, Self::D2>>, Self::Err> {
-                let mut model = model.clone();
-                model.axpy(1.0 - TAU, model_training, TAU);
-                Ok(Some(model))
-            }
-        }
-        self.model = TensorCollection::iter_tensors(&mut RecursiveWalker {
-            m: (&self.model, &self.model_training),
-            f: &mut Updater,
-        })
-        .unwrap()
-        .unwrap();
+        self.model.ema(&self.model_training, TAU);
     }
 }
 
