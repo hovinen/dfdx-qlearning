@@ -99,7 +99,7 @@ pub trait Actor<State, Action> {
 pub struct Step<State, Action> {
     old_state: State,
     action: Action,
-    new_state: State,
+    pub new_state: State,
 }
 
 pub trait ActorState<Action, Player>: Hash + Eq + Clone {

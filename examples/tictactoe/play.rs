@@ -1,7 +1,9 @@
+use std::collections::VecDeque;
+
 use crate::{CellState, TicTacToeAction, TicTacToeNetwork, TicTacToeState};
 use dfdx_qlearning::{
     abstract_model::AbstractModel,
-    actor::{Actor, TrainableActor},
+    actor::{Actor, Step, TrainableActor},
 };
 
 pub(super) fn play() {
@@ -17,6 +19,7 @@ struct App {
     state: TicTacToeState,
     actor: TrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>,
     outcome: Option<CellState>,
+    steps: VecDeque<Step<TicTacToeState, TicTacToeAction>>,
 }
 
 impl App {
@@ -30,6 +33,7 @@ impl App {
             state,
             actor,
             outcome: None,
+            steps: VecDeque::new(),
         }
     }
 
@@ -43,7 +47,9 @@ impl App {
             self.outcome = Some(CellState::X);
             return;
         }
-        self.actor.play_step(&mut self.state);
+        if let Some(step) = self.actor.play_step_to_train(&mut self.state) {
+            self.steps.push_front(step);
+        }
         self.outcome = if self.state.player_won(CellState::O) {
             Some(CellState::O)
         } else if self.state.draw() {
@@ -67,6 +73,15 @@ impl App {
                 }
             });
     }
+
+    fn resolve(&mut self) {
+        for step in self.steps.drain(..) {
+            let reward = step.new_state.o_reward();
+            self.actor.record(step, reward);
+        }
+        self.actor.train();
+        self.actor.1.save("models/tictactoe.npz").unwrap();
+    }
 }
 
 impl eframe::App for App {
@@ -84,6 +99,7 @@ impl eframe::App for App {
                         Self::show_game_over_window(ctx, "The game was a draw.");
                     }
                 }
+                self.resolve();
                 false
             } else {
                 true
