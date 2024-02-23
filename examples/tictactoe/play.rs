@@ -41,6 +41,7 @@ impl App {
         self.state.0[i][j] = CellState::X;
         if self.state.player_won(CellState::X) {
             self.outcome = Some(CellState::X);
+            return;
         }
         self.actor.play_step(&mut self.state);
         self.outcome = if self.state.player_won(CellState::O) {
