@@ -138,5 +138,8 @@ impl eframe::App for App {
                 }
             });
         });
+        if ctx.input(|input| input.key_pressed(egui::Key::Escape)) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
     }
 }
