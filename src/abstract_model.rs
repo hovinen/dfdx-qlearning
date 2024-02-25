@@ -27,6 +27,9 @@ const MIN_EPSILON: f32 = 0.01;
 /// Reduction per iteration of contribution of training model when updating the ground model.
 const TAU_DECAY: f32 = 0.9995;
 
+/// Initial value of tau
+const TAU_INIT: f32 = 0.1;
+
 /// Time steps after which we update the ground model with the training model.
 const C: usize = 2;
 
@@ -285,7 +288,7 @@ where
             model_training,
             optimiser,
             train_steps,
-            tau: 1.0,
+            tau: TAU_INIT,
         }
     }
 
@@ -312,7 +315,7 @@ where
             model_training,
             optimiser,
             train_steps,
-            tau: 1.0,
+            tau: TAU_INIT,
         })
     }
 
