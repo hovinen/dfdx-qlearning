@@ -24,8 +24,8 @@ const EPSILON_DECAY: f32 = 0.99995;
 /// model. It will decay until it reaches this point.
 const MIN_EPSILON: f32 = 0.01;
 
-/// Contribution of training model when updating the ground model.
-const TAU: f32 = 0.01;
+/// Reduction per iteration of contribution of training model when updating the ground model.
+const TAU_DECAY: f32 = 0.9995;
 
 /// Time steps after which we update the ground model with the training model.
 const C: usize = 2;
@@ -187,6 +187,10 @@ where
     pub fn epsilon(&self) -> f32 {
         self.epsilon
     }
+
+    pub fn tau(&self) -> f32 {
+        self.network.tau
+    }
 }
 
 impl<
@@ -256,6 +260,7 @@ struct NeuralNetwork<
     model_training: <Model as BuildOnDevice<Cpu, f32>>::Built,
     optimiser: Adam<<Model as BuildOnDevice<Cpu, f32>>::Built, f32, Cpu>,
     train_steps: usize,
+    tau: f32,
 }
 
 impl<Model: BuildOnDevice<Cpu, f32>, const N_FEATURES: usize, const N_ACTIONS: usize>
@@ -280,6 +285,7 @@ where
             model_training,
             optimiser,
             train_steps,
+            tau: 1.0,
         }
     }
 
@@ -306,6 +312,7 @@ where
             model_training,
             optimiser,
             train_steps,
+            tau: 1.0,
         })
     }
 
@@ -345,7 +352,8 @@ where
     }
 
     fn update_model(&mut self) {
-        self.model.ema(&self.model_training, TAU);
+        self.model.ema(&self.model_training, self.tau);
+        self.tau *= TAU_DECAY;
     }
 }
 

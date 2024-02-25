@@ -50,6 +50,7 @@ pub(super) fn train() {
         o_wins as f64 / TEST_GAME_COUNT as f64,
         draws as f64 / TEST_GAME_COUNT as f64,
         EPSILON,
+        current_actor.1.tau(),
     )];
 
     'training_loop: for step in 0..STEPS {
@@ -101,6 +102,7 @@ pub(super) fn train() {
                 o_wins as f64 / TEST_GAME_COUNT as f64,
                 draws as f64 / TEST_GAME_COUNT as f64,
                 current_actor.1.epsilon(),
+                current_actor.1.tau(),
             ));
 
             if o_wins as f32 / TEST_GAME_COUNT as f32 > 0.95 {
@@ -127,38 +129,59 @@ pub(super) fn train() {
     println!("Saved model to models/tictactoe.npz");
 }
 
-fn write_stats(stats: &[(usize, f64, f64, f64, f32)]) {
+fn write_stats(stats: &[(usize, f64, f64, f64, f32, f32)]) {
     let mut plot = Plot::new();
 
     let trace_x = Scatter::new(
-        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
-        stats.iter().map(|(_, x, _, _, _)| *x).collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(i, _, _, _, _, _)| *i)
+            .collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(_, x, _, _, _, _)| *x)
+            .collect::<Vec<_>>(),
     )
     .name("X wins")
     .mode(Mode::Lines);
     plot.add_trace(trace_x);
 
     let trace_o = Scatter::new(
-        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
-        stats.iter().map(|(_, _, o, _, _)| *o).collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(i, _, _, _, _, _)| *i)
+            .collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(_, _, o, _, _, _)| *o)
+            .collect::<Vec<_>>(),
     )
     .name("O wins")
     .mode(Mode::Lines);
     plot.add_trace(trace_o);
 
     let trace_d = Scatter::new(
-        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
-        stats.iter().map(|(_, _, _, d, _)| *d).collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(i, _, _, _, _, _)| *i)
+            .collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(_, _, _, d, _, _)| *d)
+            .collect::<Vec<_>>(),
     )
     .name("draws")
     .mode(Mode::Lines);
     plot.add_trace(trace_d);
 
     let trace_epsilon = Scatter::new(
-        stats.iter().map(|(i, _, _, _, _)| *i).collect::<Vec<_>>(),
         stats
             .iter()
-            .map(|(_, _, _, _, e)| *e as f64)
+            .map(|(i, _, _, _, _, _)| *i)
+            .collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(_, _, _, _, e, _)| *e as f64)
             .collect::<Vec<_>>(),
     )
     .name("epsilon")
@@ -166,11 +189,26 @@ fn write_stats(stats: &[(usize, f64, f64, f64, f32)]) {
     .y_axis("y2");
     plot.add_trace(trace_epsilon);
 
+    let trace_tau = Scatter::new(
+        stats
+            .iter()
+            .map(|(i, _, _, _, _, _)| *i)
+            .collect::<Vec<_>>(),
+        stats
+            .iter()
+            .map(|(_, _, _, _, _, t)| *t as f64)
+            .collect::<Vec<_>>(),
+    )
+    .name("tau")
+    .mode(Mode::Lines)
+    .y_axis("y2");
+    plot.add_trace(trace_tau);
+
     let layout = Layout::new()
         .y_axis(Axis::new().title(Title::new("Proportion")))
         .y_axis2(
             Axis::new()
-                .title(Title::new("Epsilon"))
+                .title(Title::new("Epsilon / Tau"))
                 .overlaying("y")
                 .side(AxisSide::Right),
         );
@@ -228,12 +266,17 @@ mod tests {
 
     #[rstest]
     #[case([['X', 'X', ' '], ['O', ' ', ' '], [' ', 'O', ' ']], CellState::X, 0, 2)]
+    #[case([['O', ' ', ' '], ['X', 'X', ' '], [' ', 'O', ' ']], CellState::X, 1, 2)]
+    #[case([['O', ' ', ' '], [' ', 'O', ' '], ['X', 'X', ' ']], CellState::X, 2, 2)]
+    #[case([['X', 'X', ' '], ['O', ' ', ' '], [' ', 'O', ' ']], CellState::O, 0, 2)]
+    #[case([['O', ' ', ' '], ['X', 'X', ' '], [' ', 'O', ' ']], CellState::O, 1, 2)]
+    #[case([['O', ' ', ' '], [' ', 'O', ' '], ['X', 'X', ' ']], CellState::O, 2, 2)]
     #[case([['X', ' ', ' '], ['O', 'X', 'O'], [' ', ' ', ' ']], CellState::X, 2, 2)]
     #[case([['O', 'X', ' '], ['X', 'O', 'X'], [' ', 'X', ' ']], CellState::O, 2, 2)]
     #[case([['O', 'O', ' '], [' ', ' ', 'X'], [' ', 'X', ' ']], CellState::O, 0, 2)]
     #[case([['X', 'X', ' '], ['O', ' ', ' '], [' ', 'O', ' ']], CellState::O, 0, 2)]
     #[case([['O', 'O', ' '], [' ', ' ', 'X'], [' ', 'X', ' ']], CellState::X, 0, 2)]
-    fn winning_move_is_chosen(
+    fn winning_or_blocking_move_is_chosen(
         #[case] board_state: [[char; 3]; 3],
         #[case] player: CellState,
         #[case] chosen_row: u8,
