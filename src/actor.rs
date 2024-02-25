@@ -53,7 +53,6 @@ impl<
         Logger: GameLogger<Player, State>,
     > Engine<Player, Action, State, Logger>
 {
-    #[allow(unused)]
     pub fn train_players(
         &self,
         actors: &mut [(&Player, &mut dyn Actor<State, Action>)],
@@ -158,7 +157,7 @@ where
 }
 
 impl<
-        State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
+        State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player> + Debug,
         Action: EncodableAction + Clone + Debug,
         Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,

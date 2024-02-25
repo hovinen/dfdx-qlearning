@@ -147,7 +147,6 @@ where
             .map(|c| c.encode())
             .collect::<HashSet<_>>();
         let scores = self.evaluate(state, context);
-        self.output_scores(&scores, candidates);
         let chosen_index = scores
             .into_iter()
             .enumerate()
@@ -158,6 +157,7 @@ where
         Action::decode(chosen_index)
     }
 
+    #[allow(unused)]
     fn output_scores(&self, scores: &[f32], candidates: &[Action])
     where
         Action: Debug,
@@ -190,9 +190,9 @@ where
 }
 
 impl<
-        State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone,
+        State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone + Debug,
         Context: Clone,
-        Action: EncodableAction + Clone,
+        Action: EncodableAction + Clone + Debug,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,

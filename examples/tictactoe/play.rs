@@ -27,7 +27,7 @@ impl App {
         let state = TicTacToeState::default();
         let actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
             CellState::O,
-            AbstractModel::load("models/tictactoe.npz", 10, 0.9, 0.3, 10000).unwrap(),
+            AbstractModel::load("models/tictactoe.npz", 10, 0.7, 0.1, 10000).unwrap(),
         );
         App {
             state,
@@ -43,6 +43,9 @@ impl App {
         }
 
         self.state.0[i][j] = CellState::X;
+        if let Some(last_step) = self.steps.front_mut() {
+            last_step.new_state = self.state.clone();
+        }
         if self.state.player_won(CellState::X) {
             self.outcome = Some(CellState::X);
             return;
