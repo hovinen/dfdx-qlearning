@@ -64,10 +64,15 @@ impl<
         for _ in 0..game_count {
             let mut state = State::default();
             while !state.is_game_over() {
-                for (player, actor) in actors.iter_mut() {
+                let mut steps = Vec::new();
+                for (player, actor) in actors.iter() {
                     if let Some(step) = actor.play_step_to_train(&mut state) {
-                        actor.record(step, state.reward(player));
+                        steps.push(step);
                     }
+                }
+                for ((player, actor), mut step) in actors.iter_mut().zip(steps.into_iter()) {
+                    step.new_state = state.clone();
+                    actor.record(step, state.reward(player));
                 }
             }
             match state.who_won() {
