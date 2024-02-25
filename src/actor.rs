@@ -20,8 +20,8 @@ pub struct Engine<Player, Action, State, Logger> {
 
 impl<
         Player: EnumerablePlayer + Sized,
-        Action,
-        State: ActorState<Action, Player> + Default,
+        Action: Clone,
+        State: ActorState<Action, Player> + Default + Clone,
         Logger: GameLogger<Player, State>,
     > Engine<Player, Action, State, Logger>
 {
@@ -48,8 +48,8 @@ impl<
 
 impl<
         Player: EnumerablePlayer + Sized + Hash + Eq,
-        Action,
-        State: ActorState<Action, Player> + Default,
+        Action: Clone,
+        State: ActorState<Action, Player> + Default + Clone,
         Logger: GameLogger<Player, State>,
     > Engine<Player, Action, State, Logger>
 {
@@ -62,16 +62,20 @@ impl<
         let mut draws = 0;
         for _ in 0..game_count {
             let mut state = State::default();
+            let mut steps: Vec<Option<Step<State, Action>>> = vec![None; actors.len()];
             while !state.is_game_over() {
-                let mut steps = Vec::new();
-                for (_, actor) in actors.iter() {
-                    steps.push(actor.play_step_to_train(&mut state));
-                }
-                for ((player, actor), step) in actors.iter_mut().zip(steps.into_iter()) {
-                    if let Some(mut step) = step {
+                for ((player, actor), step) in actors.iter_mut().zip(steps.iter_mut()) {
+                    if let Some(mut step) = step.take() {
                         step.new_state = state.clone();
                         actor.record(step, state.reward(player));
                     }
+                    *step = actor.play_step_to_train(&mut state);
+                }
+            }
+            for ((player, actor), step) in actors.iter_mut().zip(steps.iter_mut()) {
+                if let Some(mut step) = step.take() {
+                    step.new_state = state.clone();
+                    actor.record(step, state.reward(player));
                 }
             }
             match state.who_won() {
@@ -90,7 +94,7 @@ impl<
     }
 }
 
-pub trait Actor<State, Action> {
+pub trait Actor<State: Clone, Action: Clone> {
     fn play_step_to_train(&self, state: &mut State) -> Option<Step<State, Action>>;
 
     fn play_step(&self, state: &mut State);
@@ -100,7 +104,8 @@ pub trait Actor<State, Action> {
     fn train(&mut self);
 }
 
-pub struct Step<State, Action> {
+#[derive(Clone)]
+pub struct Step<State: Clone, Action: Clone> {
     old_state: State,
     action: Action,
     pub new_state: State,
