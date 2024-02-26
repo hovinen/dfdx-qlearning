@@ -319,6 +319,10 @@ impl EncodableState<42, CellState> for ConnectFourState {
         }
         device.tensor(raw_tensor)
     }
+
+    fn is_terminal(&self) -> bool {
+        self.player_won(CellState::Red) || self.player_won(CellState::Blue) || self.draw()
+    }
 }
 
 #[derive(Clone, Debug)]

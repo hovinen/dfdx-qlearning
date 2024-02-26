@@ -217,6 +217,10 @@ impl EncodableState<9, CellState> for TicTacToeState {
         }
         device.tensor(raw_tensor)
     }
+
+    fn is_terminal(&self) -> bool {
+        self.player_won(CellState::X) || self.player_won(CellState::O) || self.draw()
+    }
 }
 
 #[derive(Clone, Debug)]

@@ -39,6 +39,8 @@ pub trait EncodableState<const N_FEATURES: usize, Context> {
         context: Context,
         device: &D,
     ) -> Tensor<Rank1<N_FEATURES>, f32, D>;
+
+    fn is_terminal(&self) -> bool;
 }
 
 pub trait EncodableAction {
@@ -179,7 +181,9 @@ where
     }
 
     pub fn record(&mut self, state: State, action: Action, reward: Reward, new_state: State) {
-        self.training_examples.add(state, action, reward, new_state)
+        let is_terminal = new_state.is_terminal();
+        self.training_examples
+            .add(state, action, reward, new_state, is_terminal)
     }
 
     pub fn save(&self, path: &str) -> std::io::Result<()>
@@ -224,10 +228,14 @@ where
             x.extend(state.encode(context.clone(), &self.device).as_vec());
             let mut y_state = [0.0; N_ACTIONS];
             for example in examples {
-                let q_tensor = q_estimates
-                    .entry(example.new_state.clone())
-                    .or_insert_with(|| self.evaluate(&example.new_state, context.clone()));
-                let q = *q_tensor.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+                let q = if example.is_terminal {
+                    0.0
+                } else {
+                    let q_tensor = q_estimates
+                        .entry(example.new_state.clone())
+                        .or_insert_with(|| self.evaluate(&example.new_state, context.clone()));
+                    *q_tensor.iter().max_by(|a, b| a.total_cmp(b)).unwrap()
+                };
                 y_state[example.action.encode()] = example.reward.0 + self.future_discount * q;
             }
             y.extend(y_state);
@@ -376,12 +384,20 @@ impl<State: Hash + PartialEq + Eq + Clone, Action> TrainingExamples<State, Actio
         }
     }
 
-    fn add(&mut self, state: State, action: Action, reward: Reward, new_state: State) {
+    fn add(
+        &mut self,
+        state: State,
+        action: Action,
+        reward: Reward,
+        new_state: State,
+        is_terminal: bool,
+    ) {
         self.data.push_back(TrainingExample {
             state,
             action,
             reward,
             new_state,
+            is_terminal,
         });
         while self.data.len() >= self.capacity {
             self.data.pop_front();
@@ -402,6 +418,7 @@ struct TrainingExample<State, Action> {
     action: Action,
     reward: Reward,
     new_state: State,
+    is_terminal: bool,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
