@@ -44,14 +44,14 @@ pub(super) fn train() {
             None | Some(CellState::Empty) => draws += 1,
         }
     }
-    let mut stats = vec![(
-        0,
-        x_wins as f64 / TEST_GAME_COUNT as f64,
-        o_wins as f64 / TEST_GAME_COUNT as f64,
-        draws as f64 / TEST_GAME_COUNT as f64,
-        EPSILON,
-        current_actor.1.tau(),
-    )];
+    let mut stats = vec![Stats {
+        game_count: 0,
+        x_win_proportion: x_wins as f64 / TEST_GAME_COUNT as f64,
+        o_win_proportion: o_wins as f64 / TEST_GAME_COUNT as f64,
+        draw_proportion: draws as f64 / TEST_GAME_COUNT as f64,
+        epsilon: EPSILON,
+        tau: current_actor.1.tau(),
+    }];
 
     'training_loop: for step in 0..STEPS {
         let existing_actor = current_actor
@@ -96,14 +96,14 @@ pub(super) fn train() {
                 }
             }
 
-            stats.push((
-                (step + 1) * STEP_GAME_COUNT,
-                x_wins as f64 / TEST_GAME_COUNT as f64,
-                o_wins as f64 / TEST_GAME_COUNT as f64,
-                draws as f64 / TEST_GAME_COUNT as f64,
-                current_actor.1.epsilon(),
-                current_actor.1.tau(),
-            ));
+            stats.push(Stats {
+                game_count: (step + 1) * STEP_GAME_COUNT,
+                x_win_proportion: x_wins as f64 / TEST_GAME_COUNT as f64,
+                o_win_proportion: o_wins as f64 / TEST_GAME_COUNT as f64,
+                draw_proportion: draws as f64 / TEST_GAME_COUNT as f64,
+                epsilon: current_actor.1.epsilon(),
+                tau: current_actor.1.tau(),
+            });
 
             if o_wins as f32 / TEST_GAME_COUNT as f32 > 0.95 {
                 println!("Model seems good enough, ending training");
@@ -129,17 +129,30 @@ pub(super) fn train() {
     println!("Saved model to models/tictactoe.npz");
 }
 
-fn write_stats(stats: &[(usize, f64, f64, f64, f32, f32)]) {
+struct Stats {
+    game_count: usize,
+    x_win_proportion: f64,
+    o_win_proportion: f64,
+    draw_proportion: f64,
+    epsilon: f32,
+    tau: f32,
+}
+
+fn write_stats(stats: &[Stats]) {
     let mut plot = Plot::new();
 
     let trace_x = Scatter::new(
         stats
             .iter()
-            .map(|(i, _, _, _, _, _)| *i)
+            .map(|Stats { game_count, .. }| *game_count)
             .collect::<Vec<_>>(),
         stats
             .iter()
-            .map(|(_, x, _, _, _, _)| *x)
+            .map(
+                |Stats {
+                     x_win_proportion, ..
+                 }| *x_win_proportion,
+            )
             .collect::<Vec<_>>(),
     )
     .name("X wins")
@@ -149,11 +162,15 @@ fn write_stats(stats: &[(usize, f64, f64, f64, f32, f32)]) {
     let trace_o = Scatter::new(
         stats
             .iter()
-            .map(|(i, _, _, _, _, _)| *i)
+            .map(|Stats { game_count, .. }| *game_count)
             .collect::<Vec<_>>(),
         stats
             .iter()
-            .map(|(_, _, o, _, _, _)| *o)
+            .map(
+                |Stats {
+                     o_win_proportion, ..
+                 }| *o_win_proportion,
+            )
             .collect::<Vec<_>>(),
     )
     .name("O wins")
@@ -163,11 +180,15 @@ fn write_stats(stats: &[(usize, f64, f64, f64, f32, f32)]) {
     let trace_d = Scatter::new(
         stats
             .iter()
-            .map(|(i, _, _, _, _, _)| *i)
+            .map(|Stats { game_count, .. }| *game_count)
             .collect::<Vec<_>>(),
         stats
             .iter()
-            .map(|(_, _, _, d, _, _)| *d)
+            .map(
+                |Stats {
+                     draw_proportion, ..
+                 }| *draw_proportion,
+            )
             .collect::<Vec<_>>(),
     )
     .name("draws")
@@ -177,11 +198,11 @@ fn write_stats(stats: &[(usize, f64, f64, f64, f32, f32)]) {
     let trace_epsilon = Scatter::new(
         stats
             .iter()
-            .map(|(i, _, _, _, _, _)| *i)
+            .map(|Stats { game_count, .. }| *game_count)
             .collect::<Vec<_>>(),
         stats
             .iter()
-            .map(|(_, _, _, _, e, _)| *e as f64)
+            .map(|Stats { epsilon, .. }| *epsilon as f64)
             .collect::<Vec<_>>(),
     )
     .name("epsilon")
@@ -192,11 +213,11 @@ fn write_stats(stats: &[(usize, f64, f64, f64, f32, f32)]) {
     let trace_tau = Scatter::new(
         stats
             .iter()
-            .map(|(i, _, _, _, _, _)| *i)
+            .map(|Stats { game_count, .. }| *game_count)
             .collect::<Vec<_>>(),
         stats
             .iter()
-            .map(|(_, _, _, _, _, t)| *t as f64)
+            .map(|Stats { tau, .. }| *tau as f64)
             .collect::<Vec<_>>(),
     )
     .name("tau")

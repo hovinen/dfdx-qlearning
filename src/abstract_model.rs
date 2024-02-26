@@ -27,7 +27,7 @@ const MIN_EPSILON: f32 = 0.01;
 /// Reduction per iteration of contribution of training model when updating the ground model.
 const TAU_DECAY: f32 = 0.9995;
 
-/// Initial value of tau
+/// Initial contribution of training model when updating the ground model.
 const TAU_INIT: f32 = 0.1;
 
 /// Time steps after which we update the ground model with the training model.
@@ -129,6 +129,7 @@ where
     {
         let mut rng = Xoshiro256PlusPlus::from_rng(thread_rng()).unwrap();
         if rng.gen_range(0.0..1.0) < self.epsilon {
+            println!("Choosing random move");
             candidates[rng.gen_range(0..candidates.len())].clone()
         } else {
             self.choose_from_model_only(state, context, candidates)
@@ -150,6 +151,7 @@ where
             .map(|c| c.encode())
             .collect::<HashSet<_>>();
         let scores = self.evaluate(state, context);
+        self.output_scores(&scores, candidates);
         let chosen_index = scores
             .into_iter()
             .enumerate()

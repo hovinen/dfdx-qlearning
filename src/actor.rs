@@ -20,8 +20,8 @@ pub struct Engine<Player, Action, State, Logger> {
 
 impl<
         Player: EnumerablePlayer + Sized,
-        Action: Clone,
-        State: ActorState<Action, Player> + Default + Clone,
+        Action: Clone + Debug,
+        State: ActorState<Action, Player> + Default + Clone + Debug,
         Logger: GameLogger<Player, State>,
     > Engine<Player, Action, State, Logger>
 {
@@ -48,8 +48,8 @@ impl<
 
 impl<
         Player: EnumerablePlayer + Sized + Hash + Eq,
-        Action: Clone,
-        State: ActorState<Action, Player> + Default + Clone,
+        Action: Clone + Debug,
+        State: ActorState<Action, Player> + Default + Clone + Debug,
         Logger: GameLogger<Player, State>,
     > Engine<Player, Action, State, Logger>
 {
@@ -94,7 +94,7 @@ impl<
     }
 }
 
-pub trait Actor<State: Clone, Action: Clone> {
+pub trait Actor<State: Clone + Debug, Action: Clone + Debug> {
     fn play_step_to_train(&self, state: &mut State) -> Option<Step<State, Action>>;
 
     fn play_step(&self, state: &mut State);
@@ -104,8 +104,8 @@ pub trait Actor<State: Clone, Action: Clone> {
     fn train(&mut self);
 }
 
-#[derive(Clone)]
-pub struct Step<State: Clone, Action: Clone> {
+#[derive(Clone, Debug)]
+pub struct Step<State: Clone + Debug, Action: Clone + Debug> {
     old_state: State,
     action: Action,
     pub new_state: State,
@@ -248,7 +248,7 @@ where
 }
 
 impl<
-        State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
+        State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player> + Debug,
         Action: EncodableAction + Clone + Debug,
         Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,
@@ -289,8 +289,8 @@ impl<Player> NaiveActor<Player> {
     }
 }
 
-impl<State: ActorState<Action, Player>, Action: Clone, Player: Clone> Actor<State, Action>
-    for NaiveActor<Player>
+impl<State: ActorState<Action, Player> + Debug, Action: Clone + Debug, Player: Clone>
+    Actor<State, Action> for NaiveActor<Player>
 {
     fn play_step_to_train(&self, state: &mut State) -> Option<Step<State, Action>> {
         self.play_step(state);

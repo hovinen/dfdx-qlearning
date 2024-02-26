@@ -1,10 +1,9 @@
-use std::collections::VecDeque;
-
 use crate::{CellState, TicTacToeAction, TicTacToeNetwork, TicTacToeState};
 use dfdx_qlearning::{
     abstract_model::AbstractModel,
     actor::{Actor, Step, TrainableActor},
 };
+use std::collections::VecDeque;
 
 pub(super) fn play() {
     let mut options = eframe::NativeOptions::default();
@@ -80,6 +79,7 @@ impl App {
     fn resolve(&mut self) {
         for step in self.steps.drain(..) {
             let reward = step.new_state.o_reward();
+            dbg!(&step, reward);
             self.actor.record(step, reward);
         }
         self.actor.train();
