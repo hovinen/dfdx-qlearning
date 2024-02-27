@@ -154,15 +154,15 @@ where
             .collect::<HashSet<_>>();
         let scores = self.evaluate(state, context);
         let filtered_scores = scores
-            .into_iter()
+            .iter()
             .enumerate()
-            .filter(|(i, s)| candidate_indices.contains(i) && *s >= 0.0)
+            .filter(|(i, s)| candidate_indices.contains(i) && **s >= 0.0)
             .collect::<Vec<_>>();
         let total_score = filtered_scores.iter().map(|(_, s)| *s).sum::<f32>();
         let chosen_index = if total_score > 0.0 {
             let mut v = thread_rng().gen_range(0.0..total_score);
             let mut chosen_index = filtered_scores.last().unwrap().0;
-            for (index, score) in filtered_scores.into_iter() {
+            for (index, &score) in filtered_scores.into_iter() {
                 if v < score {
                     chosen_index = index;
                     break;
@@ -170,8 +170,13 @@ where
                 v -= score;
             }
             chosen_index
-        } else {
+        } else if !filtered_scores.is_empty() {
             filtered_scores[thread_rng().gen_range(0..filtered_scores.len())].0
+        } else {
+            candidate_indices
+                .into_iter()
+                .max_by(|i1, i2| scores[*i1].total_cmp(&scores[*i2]))
+                .unwrap()
         };
         Action::decode(chosen_index)
     }
