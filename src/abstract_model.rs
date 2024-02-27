@@ -153,14 +153,22 @@ where
             .map(|c| c.encode())
             .collect::<HashSet<_>>();
         let scores = self.evaluate(state, context);
-        self.output_scores(&scores, candidates);
-        let chosen_index = scores
+        let filtered_scores = scores
             .into_iter()
             .enumerate()
-            .filter(|(i, _)| candidate_indices.contains(i))
-            .max_by(|(_, v1), (_, v2)| v1.total_cmp(v2))
-            .expect("No candidate actions present")
-            .0;
+            .filter(|(i, s)| candidate_indices.contains(i) && *s >= 0.0)
+            .map(|(_, s)| s)
+            .collect::<Vec<_>>();
+        let total_score = filtered_scores.iter().copied().sum::<f32>();
+        let mut v = thread_rng().gen_range(0.0..total_score);
+        let mut chosen_index = 0;
+        for (index, score) in filtered_scores.into_iter().enumerate() {
+            if v < score {
+                chosen_index = index;
+                break;
+            }
+            v -= score;
+        }
         Action::decode(chosen_index)
     }
 
