@@ -34,7 +34,6 @@ pub(super) fn train() {
     let mut x_wins = 0;
     let mut o_wins = 0;
     let mut draws = 0;
-    let mut previous_o_wins = 0;
     for _ in 0..TEST_GAME_COUNT {
         match engine.play_once(&[
             (&CellState::X, &naive_actor),
@@ -74,10 +73,11 @@ pub(super) fn train() {
             o_wins = 0;
             draws = 0;
 
-            for _ in 0..TEST_GAME_COUNT {
+            let frozen_current_actor = current_actor.clone().make_untrainable();
+            for _ in 0..1 {
                 match engine.play_once(&[
                     (&CellState::X, &previous_actor),
-                    (&CellState::O, &current_actor),
+                    (&CellState::O, &frozen_current_actor),
                 ]) {
                     Some(CellState::X) => x_wins += 1,
                     Some(CellState::O) => o_wins += 1,
@@ -85,14 +85,12 @@ pub(super) fn train() {
                 }
             }
 
-            if o_wins > previous_o_wins {
-                println!("New model outperforms previous one. Transferring.");
-                previous_actor = current_actor
-                    .clone()
-                    .make_untrainable()
-                    .switch_player(CellState::X);
+            if o_wins > x_wins {
+                println!("New model ({o_wins}) outperforms previous one ({x_wins}). Transferring.");
+                previous_actor = frozen_current_actor.switch_player(CellState::X);
+            } else {
+                println!("New model ({o_wins}) outperformed by previous one ({x_wins}). Not transferring.");
             }
-            previous_o_wins = o_wins;
 
             x_wins = 0;
             o_wins = 0;
