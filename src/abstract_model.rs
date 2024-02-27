@@ -157,18 +157,22 @@ where
             .into_iter()
             .enumerate()
             .filter(|(i, s)| candidate_indices.contains(i) && *s >= 0.0)
-            .map(|(_, s)| s)
             .collect::<Vec<_>>();
-        let total_score = filtered_scores.iter().copied().sum::<f32>();
-        let mut v = thread_rng().gen_range(0.0..total_score);
-        let mut chosen_index = 0;
-        for (index, score) in filtered_scores.into_iter().enumerate() {
-            if v < score {
-                chosen_index = index;
-                break;
+        let total_score = filtered_scores.iter().map(|(_, s)| *s).sum::<f32>();
+        let chosen_index = if total_score > 0.0 {
+            let mut v = thread_rng().gen_range(0.0..total_score);
+            let mut chosen_index = filtered_scores.last().unwrap().0;
+            for (index, score) in filtered_scores.into_iter() {
+                if v < score {
+                    chosen_index = index;
+                    break;
+                }
+                v -= score;
             }
-            v -= score;
-        }
+            chosen_index
+        } else {
+            filtered_scores[thread_rng().gen_range(0..filtered_scores.len())].0
+        };
         Action::decode(chosen_index)
     }
 
