@@ -225,7 +225,7 @@ pub struct UntrainableActor<
     const N_ACTIONS: usize,
 >(
     Player,
-    AbstractModel<State, Player, Action, Model, N_FEATURES, N_ACTIONS>,
+    pub AbstractModel<State, Player, Action, Model, N_FEATURES, N_ACTIONS>,
 )
 where
     <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone;

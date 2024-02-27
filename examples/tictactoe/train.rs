@@ -74,7 +74,7 @@ pub(super) fn train() {
             draws = 0;
 
             let frozen_current_actor = current_actor.clone().make_untrainable();
-            for _ in 0..1 {
+            for _ in 0..TEST_GAME_COUNT {
                 match engine.play_once(&[
                     (&CellState::X, &previous_actor),
                     (&CellState::O, &frozen_current_actor),
@@ -136,7 +136,7 @@ pub(super) fn train() {
 
     write_stats(&stats);
 
-    current_actor.1.save("models/tictactoe.npz").unwrap();
+    previous_actor.1.save("models/tictactoe.npz").unwrap();
     println!("Saved model to models/tictactoe.npz");
 }
 
