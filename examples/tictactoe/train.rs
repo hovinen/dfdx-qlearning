@@ -28,12 +28,13 @@ pub(super) fn train() {
         .clone()
         .make_untrainable()
         .switch_player(CellState::X);
-    let mut naive_actor = NaiveActor::new(CellState::X);
+    let naive_actor = NaiveActor::new(CellState::X);
     let engine = Engine::new(TrivialGameLogger);
 
     let mut x_wins = 0;
     let mut o_wins = 0;
     let mut draws = 0;
+    let mut previous_o_wins = 0;
     for _ in 0..TEST_GAME_COUNT {
         match engine.play_once(&[
             (&CellState::X, &naive_actor),
@@ -54,10 +55,6 @@ pub(super) fn train() {
     }];
 
     'training_loop: for step in 0..STEPS {
-        let existing_actor = current_actor
-            .clone()
-            .make_untrainable()
-            .switch_player(CellState::X);
         println!(
             "[train_steps={TRAIN_STEPS}, capacity={CAPACITY}, future_discount={FUTURE_DISCOUNT}, epsilon={:.3}] Training games {:4} - {:4}",
             current_actor.1.epsilon(),
@@ -71,16 +68,32 @@ pub(super) fn train() {
             ],
             STEP_GAME_COUNT,
         );
-        engine.train_players(
-            &mut [
-                (&CellState::X, &mut naive_actor),
-                (&CellState::O, &mut current_actor),
-            ],
-            STEP_GAME_COUNT,
-        );
-        previous_actor = existing_actor;
 
         for _ in 0..1 {
+            x_wins = 0;
+            o_wins = 0;
+            draws = 0;
+
+            for _ in 0..TEST_GAME_COUNT {
+                match engine.play_once(&[
+                    (&CellState::X, &previous_actor),
+                    (&CellState::O, &current_actor),
+                ]) {
+                    Some(CellState::X) => x_wins += 1,
+                    Some(CellState::O) => o_wins += 1,
+                    None | Some(CellState::Empty) => draws += 1,
+                }
+            }
+
+            if o_wins > previous_o_wins {
+                println!("New model outperforms previous one. Transferring.");
+                previous_actor = current_actor
+                    .clone()
+                    .make_untrainable()
+                    .switch_player(CellState::X);
+            }
+            previous_o_wins = o_wins;
+
             x_wins = 0;
             o_wins = 0;
             draws = 0;
