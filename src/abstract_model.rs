@@ -365,7 +365,7 @@ where
     }
 
     fn update_model(&mut self) {
-        self.model.ema(&self.model_training, self.tau);
+        self.model.ema(&self.model_training, 1.0 - self.tau);
         self.tau *= TAU_DECAY;
     }
 }
