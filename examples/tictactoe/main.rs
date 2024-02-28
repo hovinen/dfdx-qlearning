@@ -236,4 +236,4 @@ impl EncodableAction for TicTacToeAction {
     }
 }
 
-type TicTacToeNetwork = (Linear<9, 32>, ReLU, Linear<32, 32>, ReLU, Linear<32, 9>);
+type TicTacToeNetwork = (Linear<9, 64>, ReLU, Linear<64, 64>, ReLU, Linear<64, 9>);
