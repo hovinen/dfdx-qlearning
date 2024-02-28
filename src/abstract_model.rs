@@ -152,7 +152,6 @@ where
             .map(|c| c.encode())
             .collect::<HashSet<_>>();
         let scores = self.evaluate(state, context);
-        self.output_scores(&scores, candidates);
         let filtered_scores = scores
             .iter()
             .enumerate()
