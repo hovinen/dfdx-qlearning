@@ -157,7 +157,7 @@ where
         + PartialEq
         + Eq
         + Clone,
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+    <Model as BuildOnDevice<Cuda, f32>>::Built: Debug
         + Clone
         + Module<Tensor<Rank1<N_FEATURES>, f32, Cuda>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cuda>>,
 {

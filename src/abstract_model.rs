@@ -377,8 +377,8 @@ where
 
     fn evaluate_training(
         &self,
-        input: &Tensor<Rank1<N_FEATURES>, f32, Cpu>,
-    ) -> Tensor<Rank1<N_ACTIONS>, f32, Cpu> {
+        input: &Tensor<Rank1<N_FEATURES>, f32, Cuda>,
+    ) -> Tensor<Rank1<N_ACTIONS>, f32, Cuda> {
         self.model_training.forward(input.clone())
     }
 }
