@@ -131,7 +131,6 @@ where
     {
         let mut rng = Xoshiro256PlusPlus::from_rng(thread_rng()).unwrap();
         if rng.gen_range(0.0..1.0) < self.epsilon {
-            println!("Choosing random move");
             candidates[rng.gen_range(0..candidates.len())].clone()
         } else {
             self.choose_from_model_only(state, context, candidates)
@@ -153,6 +152,7 @@ where
             .map(|c| c.encode())
             .collect::<HashSet<_>>();
         let scores = self.evaluate(state, context);
+        self.output_scores(&scores, candidates);
         let filtered_scores = scores
             .iter()
             .enumerate()
@@ -195,6 +195,11 @@ where
     pub fn evaluate(&self, state: &State, context: Context) -> Vec<f32> {
         let input = state.encode(context, &self.device);
         self.network.evaluate(&input).as_vec()
+    }
+
+    pub fn evaluate_training(&self, state: &State, context: Context) -> Vec<f32> {
+        let input = state.encode(context, &self.device);
+        self.network.evaluate_training(&input).as_vec()
     }
 
     pub fn record(&mut self, state: State, action: Action, reward: Reward, new_state: State) {
@@ -351,6 +356,13 @@ where
         input: &Tensor<Rank1<N_FEATURES>, f32, Cpu>,
     ) -> Tensor<Rank1<N_ACTIONS>, f32, Cpu> {
         self.model.forward(input.clone())
+    }
+
+    fn evaluate_training(
+        &self,
+        input: &Tensor<Rank1<N_FEATURES>, f32, Cpu>,
+    ) -> Tensor<Rank1<N_ACTIONS>, f32, Cpu> {
+        self.model_training.forward(input.clone())
     }
 }
 

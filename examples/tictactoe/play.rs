@@ -1,6 +1,6 @@
 use crate::{CellState, TicTacToeAction, TicTacToeNetwork, TicTacToeState};
 use dfdx_qlearning::{
-    abstract_model::AbstractModel,
+    abstract_model::{AbstractModel, EncodableAction},
     actor::{Actor, Step, TrainableActor},
 };
 use std::collections::VecDeque;
@@ -26,7 +26,7 @@ impl App {
         let state = TicTacToeState::default();
         let actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
             CellState::O,
-            AbstractModel::load("models/tictactoe.npz", 10, 0.7, 0.1, 10000).unwrap(),
+            AbstractModel::load("models/tictactoe.npz", 10, 0.7, 0.0, 10000).unwrap(),
         );
         App {
             state,
@@ -77,12 +77,26 @@ impl App {
     }
 
     fn resolve(&mut self) {
+        let mut state_action_scores = VecDeque::new();
         for step in self.steps.drain(..) {
+            let scores = self.actor.evaluate(&step.old_state);
+            state_action_scores.push_front((step.old_state.clone(), step.action.clone(), scores));
             let reward = step.new_state.o_reward();
-            dbg!(&step, reward);
             self.actor.record(step, reward);
         }
         self.actor.train();
+        for (state, action, scores) in state_action_scores {
+            let new_scores = self.actor.evaluate_training(&state);
+            println!("\n\nState:\n{state}");
+            println!("Chosen action: {action:?}");
+            println!("Scores:");
+            for (i, (old_score, new_score)) in
+                scores.into_iter().zip(new_scores.into_iter()).enumerate()
+            {
+                let action = TicTacToeAction::decode(i);
+                println!("{action:?}: old={old_score:>10.4}, new={new_score:>10.4}");
+            }
+        }
         self.actor.1.save("models/tictactoe.npz").unwrap();
     }
 }

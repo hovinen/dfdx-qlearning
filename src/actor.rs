@@ -106,8 +106,8 @@ pub trait Actor<State: Clone + Debug, Action: Clone + Debug> {
 
 #[derive(Clone, Debug)]
 pub struct Step<State: Clone + Debug, Action: Clone + Debug> {
-    old_state: State,
-    action: Action,
+    pub old_state: State,
+    pub action: Action,
     pub new_state: State,
 }
 
@@ -143,21 +143,37 @@ where
     <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone;
 
 impl<
-        State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
-        Action: EncodableAction,
-        Player,
+        State,
+        Action: EncodableAction + Clone,
+        Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
     > TrainableActor<State, Action, Player, Model, N_FEATURES, N_ACTIONS>
 where
-    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug + Clone,
+    State: ActorState<Action, Player>
+        + EncodableState<N_FEATURES, Player>
+        + Hash
+        + PartialEq
+        + Eq
+        + Clone,
+    <Model as BuildOnDevice<Cpu, f32>>::Built: Debug
+        + Clone
+        + Module<Tensor<Rank1<N_FEATURES>, f32, Cpu>, Output = Tensor<Rank1<N_ACTIONS>, f32, Cpu>>,
 {
     #[allow(unused)]
     pub fn make_untrainable(
         self,
     ) -> UntrainableActor<State, Action, Player, Model, N_FEATURES, N_ACTIONS> {
         UntrainableActor(self.0, self.1)
+    }
+
+    pub fn evaluate(&self, state: &State) -> Vec<f32> {
+        self.1.evaluate_training(state, self.0.clone())
+    }
+
+    pub fn evaluate_training(&self, state: &State) -> Vec<f32> {
+        self.1.evaluate_training(state, self.0.clone())
     }
 }
 
