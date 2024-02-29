@@ -226,12 +226,12 @@ impl EncodableState<9, CellState> for TicTacToeState {
 #[derive(Clone, Debug)]
 struct TicTacToeAction(u8, u8);
 
-impl EncodableAction for TicTacToeAction {
-    fn encode(&self) -> usize {
+impl EncodableAction<CellState> for TicTacToeAction {
+    fn encode(&self, _: CellState) -> usize {
         (self.0 * 3 + self.1) as usize
     }
 
-    fn decode(index: usize) -> Self {
+    fn decode(index: usize, _: CellState) -> Self {
         TicTacToeAction((index / 3) as u8, (index % 3) as u8)
     }
 }

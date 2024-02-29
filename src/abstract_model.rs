@@ -43,17 +43,17 @@ pub trait EncodableState<const N_FEATURES: usize, Context> {
     fn is_terminal(&self) -> bool;
 }
 
-pub trait EncodableAction {
-    fn encode(&self) -> usize;
+pub trait EncodableAction<Context> {
+    fn encode(&self, context: Context) -> usize;
 
-    fn decode(index: usize) -> Self;
+    fn decode(index: usize, context: Context) -> Self;
 }
 
 #[derive(Debug, Clone)]
 pub struct AbstractModel<
     State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone,
     Context,
-    Action: EncodableAction,
+    Action: EncodableAction<Context>,
     Model: BuildOnDevice<Cpu, f32>,
     const N_FEATURES: usize,
     const N_ACTIONS: usize,
@@ -72,7 +72,7 @@ pub struct AbstractModel<
 impl<
         State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone,
         Context: Clone,
-        Action: EncodableAction + Clone,
+        Action: EncodableAction<Context> + Clone,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
@@ -149,10 +149,10 @@ where
         assert!(!candidates.is_empty());
         let candidate_indices = candidates
             .iter()
-            .map(|c| c.encode())
+            .map(|c| c.encode(context.clone()))
             .collect::<HashSet<_>>();
-        let scores = self.evaluate(state, context);
-        self.output_scores(&scores, candidates);
+        let scores = self.evaluate(state, context.clone());
+        self.output_scores(&scores, candidates, context.clone());
         let filtered_scores = scores
             .iter()
             .enumerate()
@@ -178,17 +178,20 @@ where
                 .max_by(|i1, i2| scores[*i1].total_cmp(&scores[*i2]))
                 .unwrap()
         };
-        Action::decode(chosen_index)
+        Action::decode(chosen_index, context)
     }
 
     #[allow(unused)]
-    fn output_scores(&self, scores: &[f32], candidates: &[Action])
+    fn output_scores(&self, scores: &[f32], candidates: &[Action], context: Context)
     where
         Action: Debug,
     {
         println!("Scores:");
         for candidate in candidates {
-            println!("{candidate:?}: {}", scores[candidate.encode()]);
+            println!(
+                "{candidate:?}: {}",
+                scores[candidate.encode(context.clone())]
+            );
         }
     }
 
@@ -227,7 +230,7 @@ where
 impl<
         State: EncodableState<N_FEATURES, Context> + Hash + PartialEq + Eq + Clone + Debug,
         Context: Clone,
-        Action: EncodableAction + Clone + Debug,
+        Action: EncodableAction<Context> + Clone + Debug,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
         const N_ACTIONS: usize,
@@ -258,7 +261,8 @@ where
                         .or_insert_with(|| self.evaluate(&example.new_state, context.clone()));
                     *q_tensor.iter().max_by(|a, b| a.total_cmp(b)).unwrap()
                 };
-                y_state[example.action.encode()] = example.reward.0 + self.future_discount * q;
+                y_state[example.action.encode(context.clone())] =
+                    example.reward.0 + self.future_discount * q;
             }
             y.extend(y_state);
             state_count += 1;
@@ -285,7 +289,7 @@ where
             x.extend(state.encode(context.clone(), &self.device).as_vec());
             let mut y_state = [0.0; N_ACTIONS];
             for (action, value) in action_values {
-                y_state[action.encode()] = *value;
+                y_state[action.encode(context.clone())] = *value;
             }
             y.extend(y_state);
         }

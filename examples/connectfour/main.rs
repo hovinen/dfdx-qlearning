@@ -328,12 +328,12 @@ impl EncodableState<42, CellState> for ConnectFourState {
 #[derive(Clone, Debug)]
 struct ConnectFourAction(u8);
 
-impl EncodableAction for ConnectFourAction {
-    fn encode(&self) -> usize {
+impl EncodableAction<CellState> for ConnectFourAction {
+    fn encode(&self, _: CellState) -> usize {
         self.0 as usize
     }
 
-    fn decode(index: usize) -> Self {
+    fn decode(index: usize, _: CellState) -> Self {
         ConnectFourAction(index as u8)
     }
 }

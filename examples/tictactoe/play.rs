@@ -93,7 +93,7 @@ impl App {
             for (i, (old_score, new_score)) in
                 scores.into_iter().zip(new_scores.into_iter()).enumerate()
             {
-                let action = TicTacToeAction::decode(i);
+                let action = TicTacToeAction::decode(i, CellState::O);
                 println!("{action:?}: old={old_score:>10.4}, new={new_score:>10.4}");
             }
         }

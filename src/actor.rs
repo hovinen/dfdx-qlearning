@@ -130,7 +130,7 @@ pub trait EnumerablePlayer: Sized {
 #[derive(Clone, Debug)]
 pub struct TrainableActor<
     State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
-    Action: EncodableAction,
+    Action: EncodableAction<Player>,
     Player,
     Model: BuildOnDevice<Cpu, f32>,
     const N_FEATURES: usize,
@@ -144,7 +144,7 @@ where
 
 impl<
         State,
-        Action: EncodableAction + Clone,
+        Action: EncodableAction<Player> + Clone,
         Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
@@ -179,7 +179,7 @@ where
 
 impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player> + Debug,
-        Action: EncodableAction + Clone + Debug,
+        Action: EncodableAction<Player> + Clone + Debug,
         Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
@@ -234,7 +234,7 @@ where
 
 pub struct UntrainableActor<
     State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
-    Action: EncodableAction,
+    Action: EncodableAction<Player>,
     Player,
     Model: BuildOnDevice<Cpu, f32>,
     const N_FEATURES: usize,
@@ -248,7 +248,7 @@ where
 
 impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player>,
-        Action: EncodableAction,
+        Action: EncodableAction<Player>,
         Player,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
@@ -265,7 +265,7 @@ where
 
 impl<
         State: ActorState<Action, Player> + EncodableState<N_FEATURES, Player> + Debug,
-        Action: EncodableAction + Clone + Debug,
+        Action: EncodableAction<Player> + Clone + Debug,
         Player: Clone,
         Model: BuildOnDevice<Cpu, f32>,
         const N_FEATURES: usize,
