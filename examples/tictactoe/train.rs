@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn trained_x_model_wins_over_untrained_o_model() -> Result<()> {
-        let x_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
+        let x_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 18>(
             CellState::X,
             AbstractModel::load("models/tictactoe.npz", 10, 0.9, 0.3, 10000)?,
         );
@@ -461,7 +461,7 @@ mod tests {
 
     #[test]
     fn trained_o_model_wins_over_untrained_x_model() -> Result<()> {
-        let o_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
+        let o_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 18>(
             CellState::O,
             AbstractModel::load("models/tictactoe.npz", 10, 0.9, 0.3, 10000)?,
         );
@@ -495,7 +495,7 @@ mod tests {
         #[case] chosen_row: u8,
         #[case] chosen_col: u8,
     ) -> Result<()> {
-        let model: AbstractModel<TicTacToeState, _, _, TicTacToeNetwork, 9, 9> =
+        let model: AbstractModel<TicTacToeState, _, _, TicTacToeNetwork, 9, 18> =
             AbstractModel::load("models/tictactoe.npz", 10, 0.9, 0.3, 10000)?;
         let state = TicTacToeState(board_state.map(|row| row.map(|cell| cell.into())));
         let candidates = state.available_actions();
