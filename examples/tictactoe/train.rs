@@ -11,6 +11,7 @@ use plotly::{
     layout::Axis,
     Layout, Plot, Scatter,
 };
+use rand::{thread_rng, Rng};
 
 const TRAIN_STEPS: usize = 100;
 const CAPACITY: usize = 10000;
@@ -46,10 +47,14 @@ fn build_supervised_training_data() -> Vec<(TicTacToeState, Vec<(TicTacToeAction
     for i in 0..3 {
         for j in 0..3 {
             let state = next_move_wins_row(i, j, CellState::O);
-            examples.insert(state.clone(), (TicTacToeAction(i as u8, j as u8), 100.0));
+            for variation in create_variations(state.clone()) {
+                examples.insert(variation, (TicTacToeAction(i as u8, j as u8), 100.0));
+            }
 
             let state = transpose(state);
-            examples.insert(state, (TicTacToeAction(j as u8, i as u8), 100.0));
+            for variation in create_variations(state) {
+                examples.insert(variation, (TicTacToeAction(j as u8, i as u8), 100.0));
+            }
 
             let state = next_move_wins_row(i, j, CellState::X);
             examples.extend(
@@ -57,7 +62,13 @@ fn build_supervised_training_data() -> Vec<(TicTacToeState, Vec<(TicTacToeAction
                     .into_iter()
                     .zip((0..3).into_iter())
                     .filter(|(k, _)| *k != i)
-                    .map(|(k, l)| (state.clone(), (TicTacToeAction(k as u8, l as u8), -100.0))),
+                    .flat_map(|(k, l)| {
+                        create_variations(state.clone())
+                            .into_iter()
+                            .map(move |variation| {
+                                (variation, (TicTacToeAction(k as u8, l as u8), -100.0))
+                            })
+                    }),
             );
 
             let state = transpose(state);
@@ -66,12 +77,21 @@ fn build_supervised_training_data() -> Vec<(TicTacToeState, Vec<(TicTacToeAction
                     .into_iter()
                     .zip((0..3).into_iter())
                     .filter(|(k, _)| *k != i)
-                    .map(|(k, l)| (state.clone(), (TicTacToeAction(l as u8, k as u8), -100.0))),
+                    .flat_map(|(k, l)| {
+                        create_variations(state.clone())
+                            .into_iter()
+                            .map(move |variation| {
+                                (variation, (TicTacToeAction(l as u8, k as u8), -100.0))
+                            })
+                    }),
             );
         }
 
         let state = next_move_wins_diag_ru(i, CellState::O);
-        examples.insert(state, (TicTacToeAction(i as u8, i as u8), 100.0));
+        examples.insert(state.clone(), (TicTacToeAction(i as u8, i as u8), 100.0));
+        for variation in create_variations(state.clone()) {
+            examples.insert(variation, (TicTacToeAction(i as u8, i as u8), 100.0));
+        }
 
         let state = next_move_wins_diag_ru(i, CellState::X);
         examples.extend(
@@ -79,7 +99,13 @@ fn build_supervised_training_data() -> Vec<(TicTacToeState, Vec<(TicTacToeAction
                 .into_iter()
                 .zip((0..3).into_iter())
                 .filter(|(k, l)| *k != *l)
-                .map(|(k, l)| (state.clone(), (TicTacToeAction(k as u8, l as u8), -100.0))),
+                .flat_map(|(k, l)| {
+                    create_variations(state.clone())
+                        .into_iter()
+                        .map(move |variation| {
+                            (variation, (TicTacToeAction(k as u8, l as u8), -100.0))
+                        })
+                }),
         );
 
         let state = next_move_wins_diag_rd(i, CellState::O);
@@ -91,7 +117,13 @@ fn build_supervised_training_data() -> Vec<(TicTacToeState, Vec<(TicTacToeAction
                 .into_iter()
                 .zip((0..3).into_iter())
                 .filter(|(k, l)| *k != 2 - *l)
-                .map(|(k, l)| (state.clone(), (TicTacToeAction(k as u8, l as u8), -100.0))),
+                .flat_map(|(k, l)| {
+                    create_variations(state.clone())
+                        .into_iter()
+                        .map(move |variation| {
+                            (variation, (TicTacToeAction(k as u8, l as u8), -100.0))
+                        })
+                }),
         );
     }
 
@@ -137,6 +169,28 @@ fn transpose(state: TicTacToeState) -> TicTacToeState {
         }
     }
     TicTacToeState(rows)
+}
+
+fn create_variations(state: TicTacToeState) -> Vec<TicTacToeState> {
+    const VARIATION_COUNT: usize = 20;
+    let mut rng = thread_rng();
+    let mut variations = vec![state.clone()];
+    for _ in 0..VARIATION_COUNT {
+        let mut state = state.clone();
+        for i in 0..3 {
+            for j in 0..3 {
+                if matches!(state.0[i][j], CellState::Empty) {
+                    state.0[i][j] = match rng.gen_range(0..3) {
+                        0 => CellState::Empty,
+                        1 => CellState::X,
+                        _ => CellState::O,
+                    }
+                }
+            }
+        }
+        variations.push(state);
+    }
+    variations
 }
 
 fn reinforcement_train(
