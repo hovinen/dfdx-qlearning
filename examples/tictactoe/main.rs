@@ -39,7 +39,7 @@ enum Command {
     Play,
 }
 
-#[derive(Default, Debug, Eq, PartialEq, Clone, Hash)]
+#[derive(Default, Debug, Eq, PartialEq, Clone, Copy, Hash)]
 enum CellState {
     X,
     O,

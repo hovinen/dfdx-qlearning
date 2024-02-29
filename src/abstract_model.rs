@@ -278,6 +278,23 @@ where
         self.update_epsilon();
     }
 
+    pub fn train_supervised(&mut self, examples: &[(State, Vec<(Action, f32)>)], context: Context) {
+        let mut x = Vec::new();
+        let mut y = Vec::new();
+        for (state, action_values) in examples {
+            x.extend(state.encode(context.clone(), &self.device).as_vec());
+            let mut y_state = [0.0; N_ACTIONS];
+            for (action, value) in action_values {
+                y_state[action.encode()] = *value;
+            }
+            y.extend(y_state);
+        }
+        let x_tensor = self.device.tensor((x, (examples.len(), Const)));
+        let y_tensor = self.device.tensor((y, (examples.len(), Const)));
+        self.network.train(&x_tensor, &y_tensor);
+        self.network.model = self.network.model_training.clone();
+    }
+
     fn update_epsilon(&mut self) {
         self.epsilon = f32::max(MIN_EPSILON, EPSILON_DECAY * self.epsilon);
     }
