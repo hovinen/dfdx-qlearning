@@ -1,7 +1,7 @@
-use crate::{CellState, TicTacToeNetwork, TicTacToeState};
+use crate::{CellState, TicTacToeAction, TicTacToeNetwork, TicTacToeState};
 use dfdx_qlearning::{
     abstract_model::AbstractModel,
-    actor::{NaiveActor, TrainableActor},
+    actor::{NaiveActor, TrainableActor, UntrainableActor},
     game_logger::DisplayGameLogger,
     {actor::Engine, game_logger::TrivialGameLogger},
 };
@@ -19,8 +19,19 @@ const STEPS: usize = 60;
 const STEP_GAME_COUNT: usize = 200;
 const TEST_GAME_COUNT: usize = 100;
 
+type TrainableTicTacToeActor =
+    TrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>;
+type UntrainableTicTacToeActor =
+    UntrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>;
+
 pub(super) fn train() {
-    let mut current_actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
+    let (current_actor, previous_actor) = reinforcement_train();
+    output_sample_games(&current_actor, &previous_actor);
+    save_model(&previous_actor);
+}
+
+fn reinforcement_train() -> (TrainableTicTacToeActor, UntrainableTicTacToeActor) {
+    let mut current_actor = TrainableActor(
         CellState::O,
         AbstractModel::new(TRAIN_STEPS, FUTURE_DISCOUNT, EPSILON, CAPACITY),
     );
@@ -122,31 +133,8 @@ pub(super) fn train() {
             }
         }
     }
-
-    println!("Sample game against naive actor:");
-    Engine::new(DisplayGameLogger).play_once(&[
-        (&CellState::X, &naive_actor),
-        (&CellState::O, &current_actor),
-    ]);
-    println!("Sample game against previous trained actor:");
-    Engine::new(DisplayGameLogger).play_once(&[
-        (&CellState::X, &previous_actor),
-        (&CellState::O, &current_actor),
-    ]);
-
     write_stats(&stats);
-
-    previous_actor.1.save("models/tictactoe.npz").unwrap();
-    println!("Saved model to models/tictactoe.npz");
-}
-
-struct Stats {
-    game_count: usize,
-    x_win_proportion: f64,
-    o_win_proportion: f64,
-    draw_proportion: f64,
-    epsilon: f32,
-    tau: f32,
+    (current_actor, previous_actor)
 }
 
 fn write_stats(stats: &[Stats]) {
@@ -250,6 +238,37 @@ fn write_stats(stats: &[Stats]) {
     std::fs::create_dir_all(DIRECTORY).unwrap();
     println!("Writing graph of results to {DIRECTORY}/stats.html");
     plot.write_html(format!("{DIRECTORY}/stats.html"));
+}
+
+struct Stats {
+    game_count: usize,
+    x_win_proportion: f64,
+    o_win_proportion: f64,
+    draw_proportion: f64,
+    epsilon: f32,
+    tau: f32,
+}
+
+fn output_sample_games(
+    current_actor: &TrainableTicTacToeActor,
+    previous_actor: &UntrainableTicTacToeActor,
+) {
+    let naive_actor = NaiveActor::new(CellState::X);
+    println!("Sample game against naive actor:");
+    Engine::new(DisplayGameLogger).play_once(&[
+        (&CellState::X, &naive_actor),
+        (&CellState::O, current_actor),
+    ]);
+    println!("Sample game against previous trained actor:");
+    Engine::new(DisplayGameLogger).play_once(&[
+        (&CellState::X, previous_actor),
+        (&CellState::O, current_actor),
+    ]);
+}
+
+fn save_model(previous_actor: &UntrainableTicTacToeActor) {
+    previous_actor.1.save("models/tictactoe.npz").unwrap();
+    println!("Saved model to models/tictactoe.npz");
 }
 
 #[cfg(test)]

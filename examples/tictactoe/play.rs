@@ -26,7 +26,7 @@ impl App {
         let state = TicTacToeState::default();
         let actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
             CellState::O,
-            AbstractModel::load("models/tictactoe.npz", 10, 0.7, 0.0, 10000).unwrap(),
+            AbstractModel::load("models/tictactoe.npz", 100, 0.7, 0.0, 10000).unwrap(),
         );
         App {
             state,
