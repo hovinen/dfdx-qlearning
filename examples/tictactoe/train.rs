@@ -5,6 +5,7 @@ use dfdx_qlearning::{
     game_logger::DisplayGameLogger,
     {actor::Engine, game_logger::TrivialGameLogger},
 };
+use multimap::MultiMap;
 use plotly::{
     common::{AxisSide, Mode, Title},
     layout::Axis,
@@ -41,57 +42,60 @@ fn pretrain() -> TicTacToeModel {
 }
 
 fn build_supervised_training_data() -> Vec<(TicTacToeState, Vec<(TicTacToeAction, f32)>)> {
-    let mut examples = Vec::new();
+    let mut examples = MultiMap::new();
     for i in 0..3 {
         for j in 0..3 {
             let state = next_move_wins_row(i, j, CellState::O);
-            let action_values = vec![(TicTacToeAction(i as u8, j as u8), 100.0)];
-            examples.push((state.clone(), action_values.clone()));
+            examples.insert(state.clone(), (TicTacToeAction(i as u8, j as u8), 100.0));
 
             let state = transpose(state);
-            let action_values = transpose_action_values(action_values);
-            examples.push((state, action_values));
+            examples.insert(state, (TicTacToeAction(j as u8, i as u8), 100.0));
 
             let state = next_move_wins_row(i, j, CellState::X);
-            let action_values: Vec<(TicTacToeAction, f32)> = (0..3)
-                .into_iter()
-                .zip((0..3).into_iter())
-                .filter(|(k, _)| *k != i)
-                .map(|(k, l)| (TicTacToeAction(k as u8, l as u8), -100.0))
-                .collect();
-            examples.push((state.clone(), action_values.clone()));
+            examples.extend(
+                (0..3)
+                    .into_iter()
+                    .zip((0..3).into_iter())
+                    .filter(|(k, _)| *k != i)
+                    .map(|(k, l)| (state.clone(), (TicTacToeAction(k as u8, l as u8), -100.0))),
+            );
 
             let state = transpose(state);
-            let action_values = transpose_action_values(action_values);
-            examples.push((state, action_values));
+            examples.extend(
+                (0..3)
+                    .into_iter()
+                    .zip((0..3).into_iter())
+                    .filter(|(k, _)| *k != i)
+                    .map(|(k, l)| (state.clone(), (TicTacToeAction(l as u8, k as u8), -100.0))),
+            );
         }
+
         let state = next_move_wins_diag_ru(i, CellState::O);
-        let action_values = vec![(TicTacToeAction(i as u8, i as u8), 100.0)];
-        examples.push((state, action_values));
+        examples.insert(state, (TicTacToeAction(i as u8, i as u8), 100.0));
 
         let state = next_move_wins_diag_ru(i, CellState::X);
-        let action_values: Vec<(TicTacToeAction, f32)> = (0..3)
-            .into_iter()
-            .zip((0..3).into_iter())
-            .filter(|(k, l)| *k != *l)
-            .map(|(k, l)| (TicTacToeAction(k as u8, l as u8), -100.0))
-            .collect();
-        examples.push((state, action_values));
+        examples.extend(
+            (0..3)
+                .into_iter()
+                .zip((0..3).into_iter())
+                .filter(|(k, l)| *k != *l)
+                .map(|(k, l)| (state.clone(), (TicTacToeAction(k as u8, l as u8), -100.0))),
+        );
 
         let state = next_move_wins_diag_rd(i, CellState::O);
-        let action_values = vec![(TicTacToeAction(i as u8, 2 - i as u8), 100.0)];
-        examples.push((state, action_values));
+        examples.insert(state, (TicTacToeAction(i as u8, 2 - i as u8), 100.0));
 
         let state = next_move_wins_diag_rd(i, CellState::X);
-        let action_values: Vec<(TicTacToeAction, f32)> = (0..3)
-            .into_iter()
-            .zip((0..3).into_iter())
-            .filter(|(k, l)| *k != 2 - *l)
-            .map(|(k, l)| (TicTacToeAction(k as u8, l as u8), -100.0))
-            .collect();
-        examples.push((state, action_values));
+        examples.extend(
+            (0..3)
+                .into_iter()
+                .zip((0..3).into_iter())
+                .filter(|(k, l)| *k != 2 - *l)
+                .map(|(k, l)| (state.clone(), (TicTacToeAction(k as u8, l as u8), -100.0))),
+        );
     }
-    examples
+
+    examples.into_iter().collect()
 }
 
 fn next_move_wins_row(i: usize, j: usize, player: CellState) -> TicTacToeState {
@@ -133,15 +137,6 @@ fn transpose(state: TicTacToeState) -> TicTacToeState {
         }
     }
     TicTacToeState(rows)
-}
-
-fn transpose_action_values(
-    action_values: Vec<(TicTacToeAction, f32)>,
-) -> Vec<(TicTacToeAction, f32)> {
-    action_values
-        .into_iter()
-        .map(|(TicTacToeAction(k, l), value)| (TicTacToeAction(l, k), value))
-        .collect()
 }
 
 fn reinforcement_train(
