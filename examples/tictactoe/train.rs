@@ -34,7 +34,13 @@ pub(super) fn train() {
 }
 
 fn pretrain() -> TicTacToeModel {
+    let examples = build_supervised_training_data();
     let mut model = AbstractModel::new(TRAIN_STEPS, FUTURE_DISCOUNT, EPSILON, CAPACITY);
+    model.train_supervised(&examples, CellState::O);
+    model
+}
+
+fn build_supervised_training_data() -> Vec<(TicTacToeState, Vec<(TicTacToeAction, f32)>)> {
     let mut examples = Vec::new();
     for i in 0..3 {
         for j in 0..3 {
@@ -85,8 +91,7 @@ fn pretrain() -> TicTacToeModel {
             .collect();
         examples.push((state, action_values));
     }
-    model.train_supervised(&examples, CellState::O);
-    model
+    examples
 }
 
 fn next_move_wins_row(i: usize, j: usize, player: CellState) -> TicTacToeState {
@@ -96,25 +101,6 @@ fn next_move_wins_row(i: usize, j: usize, player: CellState) -> TicTacToeState {
     let mut rows = [[E; 3]; 3];
     rows[i] = row;
     TicTacToeState(rows)
-}
-
-fn transpose(state: TicTacToeState) -> TicTacToeState {
-    let mut rows = [[CellState::default(); 3]; 3];
-    for i in 0..3 {
-        for j in 0..3 {
-            rows[j][i] = state.0[i][j];
-        }
-    }
-    TicTacToeState(rows)
-}
-
-fn transpose_action_values(
-    action_values: Vec<(TicTacToeAction, f32)>,
-) -> Vec<(TicTacToeAction, f32)> {
-    action_values
-        .into_iter()
-        .map(|(TicTacToeAction(k, l), value)| (TicTacToeAction(l, k), value))
-        .collect()
 }
 
 fn next_move_wins_diag_rd(i: usize, player: CellState) -> TicTacToeState {
@@ -137,6 +123,25 @@ fn next_move_wins_diag_ru(i: usize, player: CellState) -> TicTacToeState {
         }
     }
     TicTacToeState(rows)
+}
+
+fn transpose(state: TicTacToeState) -> TicTacToeState {
+    let mut rows = [[CellState::default(); 3]; 3];
+    for i in 0..3 {
+        for j in 0..3 {
+            rows[j][i] = state.0[i][j];
+        }
+    }
+    TicTacToeState(rows)
+}
+
+fn transpose_action_values(
+    action_values: Vec<(TicTacToeAction, f32)>,
+) -> Vec<(TicTacToeAction, f32)> {
+    action_values
+        .into_iter()
+        .map(|(TicTacToeAction(k, l), value)| (TicTacToeAction(l, k), value))
+        .collect()
 }
 
 fn reinforcement_train(
