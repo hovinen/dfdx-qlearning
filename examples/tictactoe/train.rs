@@ -14,27 +14,33 @@ use plotly::{
 const TRAIN_STEPS: usize = 100;
 const CAPACITY: usize = 10000;
 const FUTURE_DISCOUNT: f32 = 1.0;
-const EPSILON: f32 = 1.0;
-const STEPS: usize = 60;
+const EPSILON: f32 = 0.3;
+const STEPS: usize = 20;
 const STEP_GAME_COUNT: usize = 200;
 const TEST_GAME_COUNT: usize = 100;
 
+type TicTacToeModel =
+    AbstractModel<TicTacToeState, CellState, TicTacToeAction, TicTacToeNetwork, 9, 9>;
 type TrainableTicTacToeActor =
     TrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>;
 type UntrainableTicTacToeActor =
     UntrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>;
 
 pub(super) fn train() {
-    let (current_actor, previous_actor) = reinforcement_train();
+    let model = pretrain();
+    let (current_actor, previous_actor) = reinforcement_train(model);
     output_sample_games(&current_actor, &previous_actor);
     save_model(&previous_actor);
 }
 
-fn reinforcement_train() -> (TrainableTicTacToeActor, UntrainableTicTacToeActor) {
-    let mut current_actor = TrainableActor(
-        CellState::O,
-        AbstractModel::new(TRAIN_STEPS, FUTURE_DISCOUNT, EPSILON, CAPACITY),
-    );
+fn pretrain() -> TicTacToeModel {
+    AbstractModel::new(TRAIN_STEPS, FUTURE_DISCOUNT, EPSILON, CAPACITY)
+}
+
+fn reinforcement_train(
+    model: TicTacToeModel,
+) -> (TrainableTicTacToeActor, UntrainableTicTacToeActor) {
+    let mut current_actor = TrainableActor(CellState::O, model);
     let mut previous_actor = current_actor
         .clone()
         .make_untrainable()
