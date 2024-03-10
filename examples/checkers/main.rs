@@ -31,7 +31,7 @@ enum Command {
     Play,
 }
 
-#[derive(Clone, Copy, PartialEq, EqBOARD_SIZE - 1 Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Player {
     White,
     Black,
@@ -83,9 +83,10 @@ impl ActorState<Action, Player> for State {
                             Player::Black => 1,
                         };
                         let new_row = action.piece_position.0 as i32 + row_disp;
-                        if new_row < 0 || new_row >= BOARD_SIZE {
+                        if new_row < 0 || new_row >= BOARD_SIZE as i32 {
                             false
                         } else {
+                            todo!()
                         }
                     }
                     Direction::ForwardRight => todo!(),
@@ -93,7 +94,7 @@ impl ActorState<Action, Player> for State {
                 }
             }
             PositionState::OccupiedKing(cell_player) if cell_player == player => {
-                BOARD_SIZEodo!()
+                todo!()
             }
             _ => false,
         }
