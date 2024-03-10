@@ -74,30 +74,73 @@ impl ActorState<Action, Player> for State {
     }
 
     fn apply_action(&mut self, action: Action, player: Player) -> bool {
-        match self.0[action.piece_position.0 as usize][action.piece_position.1 as usize] {
+        let (old_row, old_col) = (
+            action.piece_position.0 as usize,
+            action.piece_position.1 as usize,
+        );
+        let (new_row, new_col) = match self.0[old_row][old_col] {
             PositionState::OccupiedMan(cell_player) if cell_player == player => {
-                match action.direction {
-                    Direction::ForwardLeft => {
-                        let row_disp = match player {
-                            Player::White => -1,
-                            Player::Black => 1,
-                        };
-                        let new_row = action.piece_position.0 as i32 + row_disp;
-                        if new_row < 0 || new_row >= BOARD_SIZE as i32 {
-                            false
-                        } else {
-                            todo!()
-                        }
+                let row_disp = match player {
+                    Player::White => -1,
+                    Player::Black => 1,
+                };
+                let new_row = action.piece_position.0 as i32 + row_disp;
+                let col_disp = match action.direction {
+                    Direction::ForwardLeft => -1,
+                    Direction::ForwardRight => 1,
+                    Direction::BackwardLeft | Direction::BackwardRight => {
+                        return false;
                     }
-                    Direction::ForwardRight => todo!(),
-                    Direction::BackwardLeft | Direction::BackwardRight => false,
-                }
+                };
+                let new_col = action.piece_position.1 as i32 + col_disp;
+                (new_row, new_col)
             }
             PositionState::OccupiedKing(cell_player) if cell_player == player => {
-                todo!()
+                let row_disp = match (player, action.direction) {
+                    (Player::White, Direction::ForwardLeft)
+                    | (Player::White, Direction::ForwardRight)
+                    | (Player::Black, Direction::BackwardLeft)
+                    | (Player::Black, Direction::BackwardRight) => -1,
+                    _ => 1,
+                };
+                let new_row = action.piece_position.0 as i32 + row_disp;
+                let col_disp = match action.direction {
+                    Direction::ForwardLeft | Direction::BackwardLeft => -1,
+                    Direction::ForwardRight | Direction::BackwardRight => 1,
+                };
+                let new_col = action.piece_position.1 as i32 + col_disp;
+                (new_row, new_col)
             }
-            _ => false,
+            _ => {
+                // Own piece not at the indicated position
+                return false;
+            }
+        };
+        if new_row < 0 || new_row >= BOARD_SIZE as i32 {
+            // Out of bounds by row
+            return false;
         }
+        if new_col < 0 || new_col >= BOARD_SIZE as i32 {
+            // Out of bounds by column
+            return false;
+        }
+        let (new_row, new_col) = (new_row as usize, new_col as usize);
+        match self.0[new_row][new_col] {
+            PositionState::OccupiedMan(cell_player) | PositionState::OccupiedKing(cell_player)
+                if cell_player != player =>
+            {
+                todo!("Capturing");
+            }
+            PositionState::Vacant => {
+                self.0[new_row][new_col] = self.0[old_row][old_col];
+                self.0[old_row][old_col] = PositionState::Vacant;
+            }
+            _ => {
+                // Blocked by own piece
+                return false;
+            }
+        }
+        true
     }
 
     fn is_game_over(&self) -> bool {

@@ -196,7 +196,7 @@ where
 {
     fn play_step_to_train(&self, state: &mut State) -> Option<Step<State, Action>> {
         let old_state = state.clone();
-        let candidates = state.available_actions();
+        let candidates = state.available_actions(self.0.clone());
         if !candidates.is_empty() {
             let action = self
                 .1
@@ -213,7 +213,7 @@ where
     }
 
     fn play_step(&self, state: &mut State) {
-        let candidates = state.available_actions();
+        let candidates = state.available_actions(self.0.clone());
         if !candidates.is_empty() {
             let action = self
                 .1
@@ -282,7 +282,7 @@ where
     }
 
     fn play_step(&self, state: &mut State) {
-        let candidates = state.available_actions();
+        let candidates = state.available_actions(self.0.clone());
         if !candidates.is_empty() {
             let action = self
                 .1
@@ -314,7 +314,7 @@ impl<State: ActorState<Action, Player> + Debug, Action: Clone + Debug, Player: C
     }
 
     fn play_step(&self, state: &mut State) {
-        let candidates = state.available_actions();
+        let candidates = state.available_actions(self.0.clone());
         if !candidates.is_empty() {
             let mut rng = self
                 .1
