@@ -246,7 +246,7 @@ impl ConnectFourState {
 }
 
 impl ActorState<ConnectFourAction, CellState> for ConnectFourState {
-    fn available_actions(&self) -> Vec<ConnectFourAction> {
+    fn available_actions(&self, _player: CellState) -> Vec<ConnectFourAction> {
         (0..7)
             .filter(|i| matches!(self.0[*i][5], CellState::Empty))
             .map(|i| ConnectFourAction(i as u8))

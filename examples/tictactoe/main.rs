@@ -137,7 +137,7 @@ impl TicTacToeState {
 }
 
 impl ActorState<TicTacToeAction, CellState> for TicTacToeState {
-    fn available_actions(&self) -> Vec<TicTacToeAction> {
+    fn available_actions(&self, _player: CellState) -> Vec<TicTacToeAction> {
         itertools::iproduct!(0..3, 0..3)
             .filter(|(i, j)| matches!(self.0[*i][*j], CellState::Empty))
             .map(|(i, j)| TicTacToeAction(i as u8, j as u8))

@@ -112,7 +112,7 @@ pub struct Step<State: Clone + Debug, Action: Clone + Debug> {
 }
 
 pub trait ActorState<Action, Player>: Hash + Eq + Clone {
-    fn available_actions(&self) -> Vec<Action>;
+    fn available_actions(&self, player: Player) -> Vec<Action>;
 
     fn apply_action(&mut self, action: Action, player: Player) -> bool;
 
