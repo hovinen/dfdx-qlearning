@@ -125,22 +125,7 @@ impl ActorState<Action, Player> for State {
             return false;
         }
         let (new_row, new_col) = (new_row as usize, new_col as usize);
-        match self.0[new_row][new_col] {
-            PositionState::OccupiedMan(cell_player) | PositionState::OccupiedKing(cell_player)
-                if cell_player != player =>
-            {
-                todo!("Capturing");
-            }
-            PositionState::Vacant => {
-                self.0[new_row][new_col] = self.0[old_row][old_col];
-                self.0[old_row][old_col] = PositionState::Vacant;
-            }
-            _ => {
-                // Blocked by own piece
-                return false;
-            }
-        }
-        true
+        self.move_piece(player, (old_row, old_col), (new_row, new_col))
     }
 
     fn is_game_over(&self) -> bool {
@@ -161,6 +146,29 @@ impl ActorState<Action, Player> for State {
 
     fn reward(&self, player: &Player) -> Reward {
         todo!()
+    }
+}
+
+impl State {
+    fn move_piece(
+        &mut self,
+        player: Player,
+        (old_row, old_col): (usize, usize),
+        (new_row, new_col): (usize, usize),
+    ) -> bool {
+        match self.0[new_row][new_col] {
+            PositionState::OccupiedMan(cell_player) | PositionState::OccupiedKing(cell_player)
+                if cell_player != player =>
+            {
+                todo!("Capturing");
+            }
+            PositionState::Vacant => {
+                self.0[new_row][new_col] = self.0[old_row][old_col];
+                self.0[old_row][old_col] = PositionState::Vacant;
+                true
+            }
+            _ => false,
+        }
     }
 }
 
