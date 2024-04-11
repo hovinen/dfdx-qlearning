@@ -61,7 +61,7 @@ impl App {
         };
     }
 
-    fn show_game_over_window(ctx: &egui::Context, text: &'static str) {
+    fn show_game_over_window(&mut self, ctx: &egui::Context, text: &'static str) {
         egui::Window::new("Game over")
             .fixed_rect(egui::Rect::from_center_size(
                 ctx.available_rect().center(),
@@ -71,7 +71,8 @@ impl App {
                 ui.heading(text);
                 ui.add_space(14.0);
                 if ui.button("Close").clicked() {
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    self.state = TicTacToeState::default();
+                    self.outcome = None;
                 }
             });
     }
@@ -107,13 +108,13 @@ impl eframe::App for App {
             let enabled = if let Some(outcome) = self.outcome.as_ref() {
                 match outcome {
                     CellState::X => {
-                        Self::show_game_over_window(ctx, "You won!");
+                        self.show_game_over_window(ctx, "You won!");
                     }
                     CellState::O => {
-                        Self::show_game_over_window(ctx, "You lost!");
+                        self.show_game_over_window(ctx, "You lost!");
                     }
                     CellState::Empty => {
-                        Self::show_game_over_window(ctx, "The game was a draw.");
+                        self.show_game_over_window(ctx, "The game was a draw.");
                     }
                 }
                 self.resolve();
