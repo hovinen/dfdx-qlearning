@@ -138,6 +138,35 @@ impl eframe::App for App {
                         )
                     };
                 let cell_size = ui_size / 3.0;
+                let divider_stroke = egui::Stroke::new(3.0, egui::Color32::WHITE);
+                for i in 0..2 {
+                    ui.painter().line_segment(
+                        [
+                            egui::pos2(
+                                cell_x_start + (i as f32 + 0.5) * cell_size,
+                                cell_y_start - cell_size * 0.5,
+                            ),
+                            egui::pos2(
+                                cell_x_start + (i as f32 + 0.5) * cell_size,
+                                cell_y_start + 2.5 * cell_size,
+                            ),
+                        ],
+                        divider_stroke,
+                    );
+                    ui.painter().line_segment(
+                        [
+                            egui::pos2(
+                                cell_x_start - cell_size * 0.5,
+                                cell_y_start + (i as f32 + 0.5) * cell_size,
+                            ),
+                            egui::pos2(
+                                cell_x_start + 2.5 * cell_size,
+                                cell_y_start + (i as f32 + 0.5) * cell_size,
+                            ),
+                        ],
+                        divider_stroke,
+                    );
+                }
                 for i in 0..3 {
                     let mut cell_centre =
                         egui::pos2(cell_x_start, cell_y_start + i as f32 * cell_size);
@@ -148,8 +177,11 @@ impl eframe::App for App {
                         );
                         let response = ui.allocate_rect(rect, egui::Sense::click());
                         if response.hovered() {
-                            ui.painter()
-                                .rect_filled(rect, 20.0, egui::Color32::DARK_GRAY);
+                            ui.painter().rect_filled(
+                                rect.shrink(3.0),
+                                20.0,
+                                egui::Color32::DARK_GRAY,
+                            );
                         }
                         if response.clicked() {
                             self.set_piece(i, j);
