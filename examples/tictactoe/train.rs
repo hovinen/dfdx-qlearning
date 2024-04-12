@@ -22,11 +22,11 @@ const STEP_GAME_COUNT: usize = 200;
 const TEST_GAME_COUNT: usize = 100;
 
 type TicTacToeModel =
-    AbstractModel<TicTacToeState, CellState, TicTacToeAction, TicTacToeNetwork, 9, 18>;
+    AbstractModel<TicTacToeState, CellState, TicTacToeAction, TicTacToeNetwork, 9, 9>;
 type TrainableTicTacToeActor =
-    TrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 18>;
+    TrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>;
 type UntrainableTicTacToeActor =
-    UntrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 18>;
+    UntrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>;
 
 pub(super) fn train() {
     let model = pretrain();

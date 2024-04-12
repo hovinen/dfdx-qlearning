@@ -16,7 +16,7 @@ pub(super) fn play() {
 
 struct App {
     state: TicTacToeState,
-    actor: TrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 18>,
+    actor: TrainableActor<TicTacToeState, TicTacToeAction, CellState, TicTacToeNetwork, 9, 9>,
     outcome: Option<CellState>,
     steps: VecDeque<Step<TicTacToeState, TicTacToeAction>>,
 }
@@ -24,7 +24,7 @@ struct App {
 impl App {
     fn new() -> Self {
         let state = TicTacToeState::default();
-        let actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 18>(
+        let actor = TrainableActor::<TicTacToeState, _, _, TicTacToeNetwork, 9, 9>(
             CellState::O,
             AbstractModel::load("models/tictactoe.npz", 100, 0.7, 0.0, 10000).unwrap(),
         );

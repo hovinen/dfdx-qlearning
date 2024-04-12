@@ -199,13 +199,18 @@ impl Display for TicTacToeState {
 }
 
 impl EncodableState<9, CellState> for TicTacToeState {
-    fn encode<D: Device<f32>>(&self, _: CellState, device: &D) -> Tensor<Rank1<9>, f32, D> {
+    fn encode<D: Device<f32>>(&self, context: CellState, device: &D) -> Tensor<Rank1<9>, f32, D> {
         let mut raw_tensor = [0.0; 9];
+        let sign = match context {
+            CellState::X => 1.0,
+            CellState::O => -1.0,
+            CellState::Empty => 0.0,
+        };
         for i in 0..3 {
             for j in 0..3 {
                 raw_tensor[i * 3 + j] = match self.0[i][j] {
-                    CellState::X => 1.0,
-                    CellState::O => -1.0,
+                    CellState::X => 1.0 * sign,
+                    CellState::O => -1.0 * sign,
                     CellState::Empty => 0.0,
                 }
             }
@@ -222,24 +227,13 @@ impl EncodableState<9, CellState> for TicTacToeState {
 struct TicTacToeAction(u8, u8);
 
 impl EncodableAction<CellState> for TicTacToeAction {
-    fn encode(&self, context: CellState) -> usize {
-        Self::offset(context) + (self.0 * 3 + self.1) as usize
+    fn encode(&self, _: CellState) -> usize {
+        (self.0 * 3 + self.1) as usize
     }
 
-    fn decode(index: usize, context: CellState) -> Self {
-        let index = index - Self::offset(context);
+    fn decode(index: usize, _: CellState) -> Self {
         TicTacToeAction((index / 3) as u8, (index % 3) as u8)
     }
 }
 
-impl TicTacToeAction {
-    fn offset(context: CellState) -> usize {
-        match context {
-            CellState::X => 0,
-            CellState::O => 9,
-            _ => panic!("Invalid player"),
-        }
-    }
-}
-
-type TicTacToeNetwork = (Linear<9, 32>, ReLU, Linear<32, 32>, ReLU, Linear<32, 18>);
+type TicTacToeNetwork = (Linear<9, 32>, ReLU, Linear<32, 32>, ReLU, Linear<32, 9>);
