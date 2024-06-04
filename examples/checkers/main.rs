@@ -191,6 +191,7 @@ struct Action {
     direction: Direction,
 }
 
+#[derive(Clone, Copy)]
 enum Direction {
     ForwardLeft,
     ForwardRight,
