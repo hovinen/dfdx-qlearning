@@ -16,7 +16,7 @@ rand_xoshiro = "0.6.0"
 clap = { version = "4.5.1", features = ["derive"] }
 egui = "0.27.2"
 eframe = "0.27.2"
-googletest = "0.11.0"
+googletest = "0.12.0"
 itertools = "0.13.0"
 plotly = { version = "0.9.0", features = ["ndarray", "plotly_ndarray"] }
 rstest = "0.21.0"
